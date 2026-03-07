@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 group = 'edu.pucmm'
@@ -13,6 +14,17 @@ java {
 
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/JavaClass']
+        }
+        resources {
+            srcDirs = ['src/Recursos']
+        }
     }
 }
 
@@ -48,7 +60,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
 
-    // QR Code generation (para punto 6)
+    // QR Code generation
     implementation 'com.google.zxing:core:3.5.2'
     implementation 'com.google.zxing:javase:3.5.2'
 

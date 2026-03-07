@@ -1,83 +1,71 @@
 package Servicio;
 
-
-import configuracion.DatabaseConfig;
-import modelo.Usuario;
+import ConfidencialUsuario.Password;
+import Eventos.Configuracion.BaseDeDatosConfiguracion;
+import Modelo.Usuario;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.mindrot.jbcrypt.BCrypt;
 
+import javax.persistence.NoResultException;
+import java.util.List;
 
+public class UsuarioServicio
+{
 
-import  java.util.list;
+    private static final String ADMIN_USERNAME = "admin";
+    private static final String ADMIN_PASSWORD = "admin123";
 
-
-
-
-
-
-public class UsuarioServicio {
-
-
-
-    public void crearAdminInicial(){
-
-        Session session = DatabaseConfig.getSessionFactory().openSession();
-        Transaction tx= null;
-
-        try{
-            tx =session.beginTransaction();
-
-            Long count = (Long) session.createQuery(
-                    "SELECT COUNT(u) FROM Usuario u WHERE u.rol = 'ADMINISTRADOR'"
-
-            ).uniqueResult();
-            if(count == 0)
-            {
-                Usuario admin = new Usuario(
-                        "admin",
-                        BCrypt.hashpw("admin123", BCrypt.gensalt()),
-                        "Administrador",
-                        "admin@universidad.edu",
-                        Usuario.Rol.ADMINISTRADOR
-                );
-                session.save(admin);
-                System.out.println("Usuario administrador creado: admin / admin123");
-
-            }
-
-
-            tx.commit();
-
-
-        } catch (Exception e) {
-                if (tx != null) tx.rollback();
-                e.printStackTrace();
-            } finally {
-                session.close();
-            }
-
-    }
-
-
-    public Usuario crearUsuario(String username, String password, String nombre,
-                                String email, Usuario.Rol rol) {
-        Session session = DatabaseConfig.getSessionFactory().openSession();
+    public void inicializarAdmin() {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
-        Usuario usuario = null;
 
         try {
             tx = session.beginTransaction();
 
-            // Verificar si username ya existe
-            Usuario existente = buscarPorUsername(username);
-            if (existente != null) {
-                throw new RuntimeException("El username ya existe");
+            Long count = (Long) session.createQuery(
+                    "SELECT COUNT(u) FROM Usuario u WHERE u.rol = 'ADMINISTRADOR'"
+            ).uniqueResult();
+
+            if (count == 0) {
+                Usuario admin = new Usuario(
+                        ADMIN_USERNAME,
+                        Password.hash(ADMIN_PASSWORD),
+                        "Administrador del Sistema",
+                        "admin@universidad.edu",
+                        Usuario.Rol.ADMINISTRADOR
+                );
+                session.save(admin);
+                System.out.println("ADMIN CREADO:");
+                System.out.println("Usuario: " + ADMIN_USERNAME);
+                System.out.println("Contraseña: " + ADMIN_PASSWORD);
             }
 
-            usuario = new Usuario(
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            throw e;
+        } finally {
+            session.close();
+        }
+    }
+
+    public Usuario crearUsuario(String username, String password, String nombre,
+                                String email, Usuario.Rol rol) {
+        validarDatos(username, password, email);
+
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
+        Transaction tx = null;
+
+        try {
+            tx = session.beginTransaction();
+
+            if (existeUsername(username)) {
+                throw new IllegalArgumentException("El usuario ya existe");
+            }
+
+            Usuario usuario = new Usuario(
                     username,
-                    BCrypt.hashpw(password, BCrypt.gensalt()),
+                    Password.hash(password),
                     nombre,
                     email,
                     rol
@@ -86,88 +74,84 @@ public class UsuarioServicio {
             session.save(usuario);
             tx.commit();
 
+            return usuario;
+
         } catch (Exception e) {
             if (tx != null) tx.rollback();
             throw e;
-        } finally {
-            session.close();
-        }
-
-        return usuario;
-    }
-
-
-    public Usuario buscarPorUsername(String username) {
-        Session session = DatabaseConfig.getSessionFactory().openSession();
-        try {
-            return (Usuario) session.createQuery(
-                            "FROM Usuario WHERE username = :username"
-                    ).setParameter("username", username)
-                    .uniqueResult();
         } finally {
             session.close();
         }
     }
 
     public Usuario validarLogin(String username, String password) {
-        Usuario usuario = buscarPorUsername(username);
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
 
-        if (usuario != null && usuario.isActivo() &&
-                BCrypt.checkpw(password, usuario.getPassword())) {
-            return usuario;
+        try {
+            Usuario usuario = session.createQuery(
+                            "FROM Usuario WHERE username = :username AND activo = true",
+                            Usuario.class)
+                    .setParameter("username", username)
+                    .getSingleResult();
+
+            if (Password.verify(password, usuario.getPassword())) {
+                return usuario;
+            }
+
+        } catch (NoResultException e) {
+            return null;
+        } finally {
+            session.close();
         }
+
         return null;
     }
 
-    public void asignarRolOrganizador(Long usuarioId) {
-        cambiarRol(usuarioId, Usuario.Rol.ORGANIZADOR);
-    }
-
-    public void revocarRolOrganizador(Long usuarioId) {
-        cambiarRol(usuarioId, Usuario.Rol.PARTICIPANTE);
-    }
-
-    private void cambiarRol(Long usuarioId, Usuario.Rol nuevoRol) {
-        Session session = DatabaseConfig.getSessionFactory().openSession();
-        Transaction tx = null;
-
+    public Usuario buscarPorId(Long id) {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {
-            tx = session.beginTransaction();
-            Usuario usuario = session.get(Usuario.class, usuarioId);
+            return session.get(Usuario.class, id);
+        } finally {
+            session.close();
+        }
+    }
 
-            if (usuario != null && usuario.getRol() != Usuario.Rol.ADMINISTRADOR) {
-                usuario.setRol(nuevoRol);
-                session.update(usuario);
-            }
-
-            tx.commit();
-        } catch (Exception e) {
-            if (tx != null) tx.rollback();
-            throw e;
+    public Usuario buscarPorUsername(String username) {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
+        try {
+            return session.createQuery(
+                            "FROM Usuario WHERE username = :username", Usuario.class)
+                    .setParameter("username", username)
+                    .uniqueResult();
         } finally {
             session.close();
         }
     }
 
     public List<Usuario> listarTodos() {
-        Session session = DatabaseConfig.getSessionFactory().openSession();
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {
-            return session.createQuery("FROM Usuario", Usuario.class).list();
+            return session.createQuery(
+                            "FROM Usuario ORDER BY fechaRegistro DESC", Usuario.class)
+                    .list();
         } finally {
             session.close();
         }
     }
 
-    public void cambiarEstadoUsuario(Long usuarioId, boolean activo) {
-        Session session = DatabaseConfig.getSessionFactory().openSession();
+    public void asignarRol(Long usuarioId, Usuario.Rol nuevoRol) {
+        cambiarRol(usuarioId, nuevoRol);
+    }
+
+    public void cambiarEstado(Long usuarioId, boolean activo) {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
 
         try {
             tx = session.beginTransaction();
             Usuario usuario = session.get(Usuario.class, usuarioId);
 
-            // No permitir bloquear al admin inicial
-            if (usuario != null && usuario.getRol() != Usuario.Rol.ADMINISTRADOR) {
+            if (usuario != null && !usuario.esAdmin()) {
                 usuario.setActivo(activo);
                 session.update(usuario);
             }
@@ -181,8 +165,43 @@ public class UsuarioServicio {
         }
     }
 
+    private void cambiarRol(Long usuarioId, Usuario.Rol nuevoRol) {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
+        Transaction tx = null;
 
+        try {
+            tx = session.beginTransaction();
+            Usuario usuario = session.get(Usuario.class, usuarioId);
 
+            if (usuario != null && !usuario.esAdmin()) {
+                usuario.setRol(nuevoRol);
+                session.update(usuario);
+            }
 
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            throw e;
+        } finally {
+            session.close();
+        }
+    }
 
+    private boolean existeUsername(String username) {
+        return buscarPorUsername(username) != null;
+    }
+
+    private void validarDatos(String username, String password, String email)
+    {
+
+        if (username == null || username.length() < 3) {
+            throw new IllegalArgumentException("Usuario debe tener al menos 3 caracteres");
+        }
+        if (password == null || password.length() < 6) {
+            throw new IllegalArgumentException("Contraseña debe tener al menos 6 caracteres");
+        }
+        if (email == null || !email.contains("@")) {
+            throw new IllegalArgumentException("Email inválido");
+        }
+    }
 }

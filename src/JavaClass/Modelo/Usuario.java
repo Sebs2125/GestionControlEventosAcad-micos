@@ -1,27 +1,23 @@
-package modelo;
+package Modelo;
 
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name= "usuario")
 
-
-public class Usuario {
-
-
-
-        public enum Rol {
-
+public class Usuario
+{
+        public enum Rol
+        {
             ADMINISTRADOR,ORGANIZADOR,PARTICIPANTE
-
-
-
         }
 
         @Id
-        @GeneratedValue(strategy = GenerationType.IDENRITY)
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         private long id;
 
         @Column(unique = true, nullable = false)
@@ -36,15 +32,24 @@ public class Usuario {
         @Column(nullable = false)
         private String email;
 
-        @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING)
         @Column(nullable = false)
         private Rol rol;
 
         private boolean activo = true;
 
+        @Column(name = "fecha_registro")
+        private LocalDateTime fechaRegistro = LocalDateTime.now();
+
+        @OneToMany(mappedBy = "organizador", cascade = CascadeType.ALL, fetch = FetchType.LAZY )
+        private Set<Evento> eventosOrganizados = new HashSet<>();
+
+        @OneToMany(mappedBy = "participante", cascade = CascadeType.ALL, fetch = FetchType.LAZY )
+        private Set<InscripcionUsuario> inscripciones = new HashSet<>();
+
         public Usuario(){}
 
-    public Usuario(String username, String password, String nombre, String email, modelo.Usuario.Rol rol) {
+    public Usuario(String username, String password, String nombre, String email, Rol rol ) {
         this.username = username;
         this.password = password;
         this.nombre = nombre;
@@ -80,4 +85,25 @@ public class Usuario {
     public boolean isActivo() {
         return activo;
     }
+
+    public boolean esAdmin() {
+            return this.rol == Rol.ADMINISTRADOR;
+    }
+
+    public boolean esOrganizador() {
+            return this.rol == Rol.ORGANIZADOR || this.rol == Rol.ADMINISTRADOR;
+    }
+
+    public void setRol(Rol rol) {
+        this.rol = rol;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
+    public boolean puedeGestionarEvento(Evento evento) {
+            return esAdmin() || (esOrganizador() && evento.getOrganizador().getId() == (this.id));
+    }
+
 }
