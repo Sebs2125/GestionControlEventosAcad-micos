@@ -16,9 +16,10 @@ import java.util.Map;
 public class EventoControlador
 {
     private final EventoServicio eventoServicio;
+    private InscripcionServicio inscripcionServicio;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
-    public EventoControlador( EventoServicio eventoServicio )
+    public EventoControlador( EventoServicio eventoServicio ,InscripcionServicio inscripcionServicio )
     {
         this.eventoServicio = eventoServicio;
     }

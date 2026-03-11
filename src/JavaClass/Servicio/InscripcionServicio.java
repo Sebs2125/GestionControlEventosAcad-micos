@@ -166,6 +166,7 @@ public class InscripcionServicio {
         }
     }
 
+
     public void marcarAsistencia(String tokenQR)
     {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
