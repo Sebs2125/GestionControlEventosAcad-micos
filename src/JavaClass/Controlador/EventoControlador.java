@@ -1,7 +1,9 @@
 package Controlador;
 
 import Modelo.Evento;
+import Modelo.InscripcionUsuario;
 import Modelo.Usuario;
+import Servicio.InscripcionServicio;
 import Servicio.EventoServicio;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -78,7 +80,16 @@ public class EventoControlador
 
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
+
+        Usuario usuario = ctx.sessionAttribute("usuario");
+        if (usuario != null && usuario.getRol() == Usuario.Rol.PARTICIPANTE) {
+            InscripcionUsuario inscripcion = InscripcionServicio.buscarPorEventoYParticipante(id, usuario.getId());
+            modelo.put("inscripcion", inscripcion);
+        }
+
         ctx.render("/templates/eventos/detalle.html", modelo);
+
+
 
     }
 
@@ -249,5 +260,7 @@ public class EventoControlador
         modelo.put("rol", ctx.sessionAttribute("rol"));
         return modelo;
     }
+
+
 
 }
