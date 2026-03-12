@@ -34,7 +34,6 @@ public class AutorizacionControlador
             }
         });
 
-        app.before("/admin/*", this::requerirAdmin);
         app.before("/organizador/*", this::requerirOrganizador);
 
     }
@@ -61,7 +60,7 @@ public class AutorizacionControlador
 
             String redirect = ctx.queryParam("redirect");
 
-            if ( redirect != null )
+            if ( redirect != null && !redirect.isEmpty() )
             {
                 ctx.redirect( redirect );
             }
@@ -112,16 +111,6 @@ public class AutorizacionControlador
     {
         ctx.req().getSession().invalidate();
         ctx.redirect("/login");
-    }
-
-    private void requerirAdmin(Context ctx)
-    {
-        Usuario u = ctx.sessionAttribute("usuario");
-
-        if (u == null || !u.esAdmin())
-        {
-            ctx.status(403).result("Acceso denegado");
-        }
     }
 
     private void requerirOrganizador(Context ctx)

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Escáner QR', ~{::main})}">
+    <title>Escáner QR</title>
+</head>
+<body>
+<main>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb" class="mb-1">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/organizador/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item">
+                        <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/resumen'}"
+                           th:text="${evento.titulo}">Evento</a>
+                    </li>
+                    <li class="breadcrumb-item active">Escáner QR</li>
+                </ol>
+            </nav>
+            <h2><i class="bi bi-qr-code-scan me-2"></i>Escáner de Asistencia</h2>
+        </div>
+        <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/resumen'}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver al Resumen
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <!-- Estado del escáner -->
+            <div id="estado-escaner" class="alert alert-info text-center mb-3">
+                <i class="bi bi-camera me-2"></i>Haz clic en <strong>Iniciar Escáner</strong> para comenzar
+            </div>
+
+            <!-- Visor de cámara -->
+            <div class="card shadow mb-4">
+                <div class="card-body text-center p-3">
+                    <div id="reader" style="width:100%;"></div>
+                    <div class="mt-3 d-flex justify-content-center gap-2">
+                        <button id="btn-iniciar" class="btn btn-primary" onclick="iniciarEscaner()">
+                            <i class="bi bi-play-circle me-2"></i>Iniciar Escáner
+                        </button>
+                        <button id="btn-detener" class="btn btn-secondary d-none" onclick="detenerEscaner()">
+                            <i class="bi bi-stop-circle me-2"></i>Detener
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingreso manual del token -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-keyboard me-2"></i>Ingreso Manual de Token
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" id="input-token" class="form-control"
+                               placeholder="Pega aquí el token QR...">
+                        <button class="btn btn-primary" onclick="validarToken()">
+                            <i class="bi bi-check-lg me-1"></i>Validar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de scans de esta sesión -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between">
+                    <span><i class="bi bi-clock-history me-2"></i>Historial de esta sesión</span>
+                    <span class="badge bg-primary" id="contador-scans">0</span>
+                </div>
+                <ul class="list-group list-group-flush" id="historial-scans">
+                    <li class="list-group-item text-muted text-center small py-3">
+                        Sin registros aún
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- html5-qrcode -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let html5QrCode = null;
+        let escaneando  = false;
+        let contadorScans = 0;
+
+        function iniciarEscaner() {
+            html5QrCode = new Html5Qrcode("reader");
+
+            Html5Qrcode.getCameras().then(cameras => {
+                if (!cameras || cameras.length === 0) {
+                    mostrarEstado('No se detectaron cámaras disponibles.', 'danger');
+                    return;
+                }
+
+                const camaraId = cameras[cameras.length - 1].id; // Preferir cámara trasera
+
+                html5QrCode.start(
+                    camaraId,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    onScanExitoso,
+                    (errorMsg) => { /* ignorar errores de escaneo parcial */ }
+                ).then(() => {
+                    escaneando = true;
+                    document.getElementById('btn-iniciar').classList.add('d-none');
+                    document.getElementById('btn-detener').classList.remove('d-none');
+                    mostrarEstado('Cámara activa. Acerca el código QR.', 'success');
+                }).catch(err => {
+                    mostrarEstado('Error al acceder a la cámara: ' + err, 'danger');
+                });
+
+            }).catch(err => {
+                mostrarEstado('Error al obtener cámaras: ' + err, 'danger');
+            });
+        }
+
+        function detenerEscaner() {
+            if ( html5QrCode && escaneando ) {
+                html5QrCode.stop().then(() => {
+                    escaneando = false;
+                    document.getElementById('btn-iniciar').classList.remove('d-none');
+                    document.getElementById('btn-detener').classList.add('d-none');
+                    mostrarEstado('Escáner detenido.', 'secondary');
+                });
+            }
+        }
+
+        async function onScanExitoso(decodedText) {
+            // Pausar brevemente para no procesar el mismo QR dos veces seguidas
+            if ( escaneando ) {
+                html5QrCode.pause();
+                await procesarToken(decodedText);
+                setTimeout(() => { if (html5QrCode) html5QrCode.resume(); }, 2000);
+            }
+        }
+
+        async function validarToken() {
+            const token = document.getElementById('input-token').value.trim();
+            if ( !token ) return;
+            await procesarToken(token);
+            document.getElementById('input-token').value = '';
+        }
+
+        async function procesarToken(rawToken) {
+            // El token puede venir como JSON (desde el QR generado en detalle.html)
+            // o como UUID directo (tokenQR almacenado en BD)
+            let token = rawToken;
+            try {
+                const parsed = JSON.parse(rawToken);
+                if ( parsed.token ) token = parsed.token;
+            } catch (e) {
+                // No era JSON, usar el valor tal cual
+            }
+
+            try {
+                const resp = await fetch('/api/asistencia/validar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await resp.json();
+
+                if ( resp.ok ) {
+                    mostrarEstado('✅ Asistencia registrada correctamente', 'success');
+                    agregarHistorial(token.substring(0, 8) + '...', 'success', 'Registrada');
+                } else {
+                    mostrarEstado('⚠️ ' + (data.error || 'Error al validar'), 'warning');
+                    agregarHistorial(token.substring(0, 8) + '...', 'warning', data.error || 'Error');
+                }
+
+            } catch (err) {
+                mostrarEstado('Error de conexión con el servidor', 'danger');
+            }
+        }
+
+        function mostrarEstado(mensaje, tipo) {
+            const el = document.getElementById('estado-escaner');
+            el.className = `alert alert-${tipo} text-center mb-3`;
+            el.innerHTML = mensaje;
+        }
+
+        function agregarHistorial(token, tipo, resultado) {
+            contadorScans++;
+            document.getElementById('contador-scans').textContent = contadorScans;
+
+            const lista  = document.getElementById('historial-scans');
+            const icono  = tipo === 'success' ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-warning';
+            const hora   = new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const item   = document.createElement('li');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+            item.innerHTML = `
+                <span><i class="bi ${icono} me-2"></i><code>${token}</code></span>
+                <span class="text-muted small">${hora} — ${resultado}</span>`;
+
+            // Limpiar placeholder si existe
+            const placeholder = lista.querySelector('.text-muted.text-center');
+            if ( placeholder ) placeholder.remove();
+
+            lista.prepend(item);
+        }
+
+        // Permitir Enter en el input manual
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('input-token').addEventListener('keydown', e => {
+                if (e.key === 'Enter') validarToken();
+            });
+        });
+        /*]]>*/
+    </script>
+
+</main>
+</body>
+</html>

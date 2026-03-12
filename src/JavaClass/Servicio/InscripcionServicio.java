@@ -117,7 +117,7 @@ public class InscripcionServicio {
         }
     }
 
-    public static InscripcionUsuario buscarPorEventoYParticipante(long eventoId, long participanteId)
+    public static InscripcionUsuario buscarPorEventoYParticipantePublico(long eventoId, long participanteId)
     {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {

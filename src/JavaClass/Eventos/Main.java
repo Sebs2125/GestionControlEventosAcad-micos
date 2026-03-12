@@ -1,5 +1,6 @@
 package Eventos;
 
+import Controlador.AdminControlador;
 import Controlador.ApiControlador;
 import Controlador.AutorizacionControlador;
 import Controlador.EventoControlador;
@@ -26,15 +27,12 @@ public class Main
 
         Javalin app = JavalinConfiguracion.crearAplicacion();
 
-
-
         new AutorizacionControlador(usuarioServicio).registrarRutas(app);
         new EventoControlador(eventoServicio,inscripcionServicio).registrarRutas(app);
-
+        new AdminControlador( eventoServicio, usuarioServicio).registrarRutas(app);
 
         ApiControlador apiControlador=new ApiControlador(inscripcionServicio, eventoServicio, estadisticaServicio );
         apiControlador.registrarRutas(app);
-
 
         app.get("/health", ctx -> ctx.json(new Object() {
             public final String status = "OK";
@@ -43,8 +41,6 @@ public class Main
 
         int puerto = Integer.parseInt(System.getenv(). getOrDefault("PORT", "7000"));
         app.start(puerto);
-
-
 
         Runtime.getRuntime().addShutdownHook(new Thread(BaseDeDatosConfiguracion::shutdown));
 

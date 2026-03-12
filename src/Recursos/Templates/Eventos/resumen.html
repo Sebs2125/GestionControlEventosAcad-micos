@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout(~{::title}, ~{::main})}">
-    <title>Resumen del Evento</title>
+<head th:replace="~{layout :: layout('Resumen del Evento', ~{::main})}">
+    <title>Resumen</title>
 </head>
 <body>
 <main>
-    <!-- Header -->
+
+    <!-- Encabezado -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-1">
+            <nav aria-label="breadcrumb" class="mb-1">
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="/organizador/dashboard">Dashboard</a></li>
                     <li class="breadcrumb-item active">Resumen</li>
                 </ol>
@@ -21,119 +22,119 @@
         </a>
     </div>
 
-    <!-- Tarjetas de estadísticas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-uppercase mb-2 opacity-75">Total Inscritos</h6>
-                            <h2 class="mb-0" id="total-inscritos">-</h2>
+    <!-- Tarjetas de estadísticas (cargadas vía Fetch) -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase small opacity-75 mb-1">Total Inscritos</div>
+                        <div class="fs-2 fw-bold" id="total-inscritos">
+                            <span class="spinner-border spinner-border-sm"></span>
                         </div>
-                        <i class="bi bi-people-fill fs-1 opacity-50"></i>
                     </div>
+                    <i class="bi bi-people-fill fs-1 opacity-25"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-uppercase mb-2 opacity-75">Total Asistentes</h6>
-                            <h2 class="mb-0" id="total-asistentes">-</h2>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase small opacity-75 mb-1">Total Asistentes</div>
+                        <div class="fs-2 fw-bold" id="total-asistentes">
+                            <span class="spinner-border spinner-border-sm"></span>
                         </div>
-                        <i class="bi bi-check-circle-fill fs-1 opacity-50"></i>
                     </div>
+                    <i class="bi bi-check-circle-fill fs-1 opacity-25"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-uppercase mb-2 opacity-75">% Asistencia</h6>
-                            <h2 class="mb-0" id="porcentaje-asistencia">-</h2>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card bg-info text-white shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase small opacity-75 mb-1">% Asistencia</div>
+                        <div class="fs-2 fw-bold" id="porcentaje-asistencia">
+                            <span class="spinner-border spinner-border-sm"></span>
                         </div>
-                        <i class="bi bi-graph-up fs-1 opacity-50"></i>
                     </div>
+                    <i class="bi bi-graph-up fs-1 opacity-25"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-uppercase mb-2 opacity-75">Cupos Disponibles</h6>
-                            <h2 class="mb-0" id="cupos-disponibles">-</h2>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card bg-warning text-dark shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase small opacity-75 mb-1">Cupos Disponibles</div>
+                        <div class="fs-2 fw-bold" id="cupos-disponibles">
+                            <span class="spinner-border spinner-border-sm"></span>
                         </div>
-                        <i class="bi bi-ticket-perforated fs-1 opacity-50"></i>
                     </div>
+                    <i class="bi bi-ticket-perforated fs-1 opacity-25"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="row">
-        <!-- Gráfico de Inscripciones por Día -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Inscripciones por Día</h5>
+    <!-- Gráficos (punto 7d) -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-bar-chart me-2 text-primary"></i>Inscripciones por Día
                 </div>
                 <div class="card-body">
-                    <canvas id="chartInscripciones" height="250"></canvas>
+                    <div id="spinner-inscripciones" class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando...
+                    </div>
+                    <canvas id="chartInscripciones" style="display:none; max-height:280px;"></canvas>
                 </div>
             </div>
         </div>
-
-        <!-- Gráfico de Asistencia por Hora -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Asistencia por Hora</h5>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-clock-history me-2 text-success"></i>Asistencia por Hora
                 </div>
                 <div class="card-body">
-                    <canvas id="chartAsistencia" height="250"></canvas>
+                    <div id="spinner-asistencia" class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando...
+                    </div>
+                    <canvas id="chartAsistencia" style="display:none; max-height:280px;"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tabla de inscritos -->
-    <div class="card shadow">
+    <!-- Tabla de inscritos (punto 7) -->
+    <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Lista de Inscritos</h5>
-            <button class="btn btn-sm btn-outline-primary" onclick="exportarCSV()">
+            <span class="fw-bold"><i class="bi bi-list-check me-2"></i>Lista de Inscritos</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV()">
                 <i class="bi bi-download me-1"></i>Exportar CSV
             </button>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0" id="tabla-inscritos">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Participante</th>
-                        <th>Email</th>
-                        <th>Fecha Inscripción</th>
-                        <th>Asistencia</th>
-                        <th>Hora Asistencia</th>
-                    </tr>
-                    </thead>
-                    <tbody id="tbody-inscritos">
-                    <tr>
-                        <td colspan="5" class="text-center py-4 text-muted">
-                            <div class="spinner-border spinner-border-sm me-2"></div>
-                            Cargando datos...
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" id="tabla-inscritos">
+                <thead class="table-light">
+                <tr>
+                    <th>Participante</th>
+                    <th>Email</th>
+                    <th>Fecha Inscripción</th>
+                    <th>Asistencia</th>
+                    <th>Hora Asistencia</th>
+                </tr>
+                </thead>
+                <tbody id="tbody-inscritos">
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando datos...
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -143,56 +144,54 @@
     <script th:inline="javascript">
         /*<![CDATA[*/
         const eventoId = [[${evento.id}]];
-
-        // Gráficos
         let chartInscripciones = null;
-        let chartAsistencia = null;
+        let chartAsistencia    = null;
 
+        // ── Carga principal de estadísticas vía Fetch API ────────────────────
         async function cargarEstadisticas() {
             try {
-                const response = await fetch(`/api/eventos/${eventoId}/estadisticas`);
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Error cargando estadísticas');
+                const resp = await fetch(`/api/eventos/${eventoId}/estadisticas`);
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.error || 'Error del servidor');
                 }
+                const data = await resp.json();
+                const r    = data.resumen;
 
                 // Actualizar tarjetas
-                const r = data.resumen;
-                document.getElementById('total-inscritos').textContent = r.totalInscritos;
-                document.getElementById('total-asistentes').textContent = r.totalAsistentes;
+                document.getElementById('total-inscritos').textContent      = r.totalInscritos;
+                document.getElementById('total-asistentes').textContent     = r.totalAsistentes;
                 document.getElementById('porcentaje-asistencia').textContent = r.porcentajeAsistencia + '%';
-                document.getElementById('cupos-disponibles').textContent = r.cuposDisponibles;
+                document.getElementById('cupos-disponibles').textContent    = r.cuposDisponibles;
 
-                // Crear gráfico de inscripciones por día
-                crearChartInscripciones(data.inscripcionesPorDia);
+                // Renderizar gráficos
+                renderChartInscripciones(data.inscripcionesPorDia);
+                renderChartAsistencia(data.asistenciasPorHora); // key correcta del backend
 
-                // Crear gráfico de asistencia por hora
-                crearChartAsistencia(data.asistenciaPorHora);
+                // Rellenar tabla con los datos del resumen
+                actualizarTablaInscritos(r);
 
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error cargando estadísticas: ' + error.message);
+            } catch (err) {
+                console.error('Error cargando estadísticas:', err);
+                ['total-inscritos','total-asistentes','porcentaje-asistencia','cupos-disponibles']
+                    .forEach(id => document.getElementById(id).textContent = '—');
             }
         }
 
-        function crearChartInscripciones(datos) {
-            const ctx = document.getElementById('chartInscripciones').getContext('2d');
+        function renderChartInscripciones(datos) {
+            document.getElementById('spinner-inscripciones').style.display = 'none';
+            const canvas = document.getElementById('chartInscripciones');
+            canvas.style.display = 'block';
 
-            const labels = datos.map(d => d.fecha);
-            const values = datos.map(d => d.cantidad);
+            if (chartInscripciones) chartInscripciones.destroy();
 
-            if (chartInscripciones) {
-                chartInscripciones.destroy();
-            }
-
-            chartInscripciones = new Chart(ctx, {
+            chartInscripciones = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: datos.map(d => d.fecha),
                     datasets: [{
                         label: 'Inscripciones',
-                        data: values,
+                        data: datos.map(d => d.cantidad),
                         backgroundColor: 'rgba(13, 110, 253, 0.7)',
                         borderColor: 'rgba(13, 110, 253, 1)',
                         borderWidth: 1,
@@ -201,74 +200,81 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { stepSize: 1 }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
         }
 
-        function crearChartAsistencia(datos) {
-            const ctx = document.getElementById('chartAsistencia').getContext('2d');
+        function renderChartAsistencia(datos) {
+            document.getElementById('spinner-asistencia').style.display = 'none';
+            const canvas = document.getElementById('chartAsistencia');
+            canvas.style.display = 'block';
 
-            const labels = datos.map(d => d.hora);
-            const values = datos.map(d => d.cantidad);
+            if (chartAsistencia) chartAsistencia.destroy();
 
-            if (chartAsistencia) {
-                chartAsistencia.destroy();
-            }
-
-            chartAsistencia = new Chart(ctx, {
+            chartAsistencia = new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: datos.map(d => d.hora),
                     datasets: [{
                         label: 'Asistentes',
-                        data: values,
-                        backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                        data: datos.map(d => d.cantidad),
+                        backgroundColor: 'rgba(25, 135, 84, 0.15)',
                         borderColor: 'rgba(25, 135, 84, 1)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
-                        pointRadius: 4,
+                        pointRadius: 5,
                         pointBackgroundColor: 'rgba(25, 135, 84, 1)'
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { stepSize: 1 }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
         }
 
-        function exportarCSV() {
-            // Implementar exportación si es necesario
-            alert('Función de exportación en desarrollo');
+        function actualizarTablaInscritos(resumen) {
+            // La tabla detallada requeriría un endpoint adicional;
+            // aquí se muestra el resumen disponible desde el endpoint de estadísticas
+            const tbody = document.getElementById('tbody-inscritos');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-3 text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Total inscritos: <strong>${resumen.totalInscritos}</strong> —
+                        Asistentes confirmados: <strong>${resumen.totalAsistentes}</strong>
+                    </td>
+                </tr>`;
         }
 
-        // Cargar al iniciar
-        document.addEventListener('DOMContentLoaded', cargarEstadisticas);
+        // ── Exportar CSV básico ──────────────────────────────────────────────
+        function exportarCSV() {
+            const rows = [['Evento ID', 'Total Inscritos', 'Total Asistentes', '% Asistencia']];
+            const ti   = document.getElementById('total-inscritos').textContent;
+            const ta   = document.getElementById('total-asistentes').textContent;
+            const pa   = document.getElementById('porcentaje-asistencia').textContent;
+            rows.push([eventoId, ti, ta, pa]);
 
-        // Recargar cada 30 segundos
+            const csv  = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `resumen_evento_${eventoId}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Cargar al iniciar y refrescar cada 30 s
+        document.addEventListener('DOMContentLoaded', cargarEstadisticas);
         setInterval(cargarEstadisticas, 30000);
         /*]]>*/
     </script>
+
 </main>
 </body>
 </html>

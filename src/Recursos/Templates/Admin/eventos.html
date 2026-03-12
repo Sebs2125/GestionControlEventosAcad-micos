@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Gestión de Eventos', ~{::main})}">
+    <title>Eventos Admin</title>
+</head>
+<body>
+<main>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb" class="mb-1">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/admin/dashboard">Panel Admin</a></li>
+                    <li class="breadcrumb-item active">Eventos</li>
+                </ol>
+            </nav>
+            <h2><i class="bi bi-calendar-event me-2"></i>Gestión de Eventos</h2>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    <div th:if="${exito}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${exito}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Título</th>
+                        <th>Organizador</th>
+                        <th>Fecha y Hora</th>
+                        <th>Lugar</th>
+                        <th>Inscritos</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="evento : ${eventos}"
+                        th:class="${evento.estado.name() == 'CANCELADO'} ? 'table-secondary'">
+                        <td>
+                            <div class="fw-bold" th:text="${evento.titulo}">Título</div>
+                            <small class="text-muted"
+                                   th:text="${#strings.abbreviate(evento.descripcion, 50)}">Desc</small>
+                        </td>
+                        <td th:text="${evento.organizador.nombre}">Organizador</td>
+                        <td>
+                            <span th:text="${#temporals.format(evento.fechaHora, 'dd/MM/yyyy HH:mm')}">-</span>
+                        </td>
+                        <td th:text="${evento.lugar}">Lugar</td>
+                        <td>
+                            <span class="badge bg-info text-dark">
+                                <span th:text="${evento.totalInscritos}">0</span> /
+                                <span th:text="${evento.cupoMaximo}">0</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span th:switch="${evento.estado.name()}">
+                                <span th:case="'BORRADOR'"  class="badge bg-warning text-dark">Borrador</span>
+                                <span th:case="'PUBLICADO'" class="badge bg-success">Publicado</span>
+                                <span th:case="'CANCELADO'" class="badge bg-danger">Cancelado</span>
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <!-- Eliminar evento inapropiado (punto 8d) -->
+                            <form th:action="@{'/admin/eventos/' + ${evento.id} + '/eliminar'}"
+                                  method="post" class="d-inline"
+                                  onsubmit="return confirm('¿Eliminar este evento permanentemente? Esta acción no se puede deshacer.')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(eventos)}">
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-calendar-x display-6 d-block mb-2"></i>
+                            No hay eventos registrados en el sistema
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

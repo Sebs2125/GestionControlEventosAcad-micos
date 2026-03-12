@@ -21,7 +21,7 @@ public class InscripcionUsuario
     private Evento evento;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "evento_id", nullable = false)
+    @JoinColumn(name = "participante_id", nullable = false)
     private Usuario participante;
 
     @Enumerated(EnumType.STRING)

@@ -139,7 +139,23 @@ public class UsuarioServicio
         }
     }
 
-    public void asignarRol(Long usuarioId, Usuario.Rol nuevoRol) {
+    public long contarPorRol( Usuario.Rol rol)
+    {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
+
+        try {
+            return (Long) session.createQuery(
+                    "SELECT COUNT(u) FROM Usuario u WHERE u.rol = :rol")
+                    .setParameter("rol", rol)
+                    .uniqueResult();
+        } finally {
+            session.close();
+        }
+
+    }
+
+    public void asignarRol(Long usuarioId, Usuario.Rol nuevoRol)
+    {
         cambiarRol(usuarioId, nuevoRol);
     }
 

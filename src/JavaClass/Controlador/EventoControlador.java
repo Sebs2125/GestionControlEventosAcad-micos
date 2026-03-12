@@ -18,12 +18,12 @@ public class EventoControlador
 {
     private final EventoServicio eventoServicio;
     private InscripcionServicio inscripcionServicio;
-    private UsuarioServicio usuarioServicio;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     public EventoControlador( EventoServicio eventoServicio ,InscripcionServicio inscripcionServicio )
     {
         this.eventoServicio = eventoServicio;
+        this.inscripcionServicio = inscripcionServicio;
     }
 
     public void registrarRutas(Javalin app )
@@ -44,12 +44,7 @@ public class EventoControlador
         app.post("/organizador/eventos/{id}/despublicar", this::despublicar);
         app.post("/organizador/eventos/{id}/cancelar", this::cancelar);
         app.get("/organizador/eventos/{id}/resumen", this::verResumen);
-
-        //Admin
-        app.get("/admin/dashboard", this::adminDashboard);
-        app.get("/admin/eventos", this::adminEventos);
-        app.post("/admin/eventos/{id}/eliminar", this::eliminar);
-
+        app.get("/organizador/eventos/{id}/escaner", this::verEscaner);
     }
 
     //Vistas públicas:
@@ -86,15 +81,14 @@ public class EventoControlador
         modelo.put("evento", evento);
 
         Usuario usuario = ctx.sessionAttribute("usuario");
-        if (usuario != null && usuario.getRol() == Usuario.Rol.PARTICIPANTE) {
-            InscripcionUsuario inscripcion = InscripcionServicio.buscarPorEventoYParticipante(id, usuario.getId());
+
+        if (usuario != null && usuario.getRol() == Usuario.Rol.PARTICIPANTE)
+        {
+            InscripcionUsuario inscripcion = InscripcionServicio.buscarPorEventoYParticipantePublico(id, usuario.getId());
             modelo.put("inscripcion", inscripcion);
         }
 
         ctx.render("/templates/eventos/detalle.html", modelo);
-
-
-
     }
 
     //Organizador
@@ -227,113 +221,7 @@ public class EventoControlador
         }
     }
 
-    //Admin
-    public void registrarRutasAdmin( Javalin app )
-    {
-        app.before("/admin/*", ctx -> {
-            Usuario u = ctx.sessionAttribute("usuario");
-
-            if ( u == null || !u.esAdmin() )
-            {
-                ctx.status(403).result("Acceso denegado")
-            }
-
-        });
-
-        app.get("/admin/dashboard", this::adminDashboard );
-
-        app.get("/admin/usuarios", this::adminUsuarios );
-        app.post("/admin/usuarios/{id}/bloquear", this::bloquearUsuario);
-        app.post("/admin/usuarios/{id}/desbloquear", this::desbloquearUsuario);
-        app.post("/admin/usuarios/{id}/rol", this::cambiarRolUsuario);
-
-    }
-
-    private void adminDashboard(Context ctx)
-    {
-        Map<String, Object> modelo = baseModelo(ctx);
-        modelo.put("totalUsuarios", 0); // Llenar con datos reales
-        modelo.put("totalEventos", eventoServicio.listarTodos().size());
-        modelo.put("totalOrganizadores", usuarioServicio.contarPorRol(Usuario.Rol.ORGANIZADOR));
-        ctx.render("/templates/admin/panel.html", modelo);
-    }
-
-    private void adminUsuarios(Context ctx)
-    {
-        Map<String, Object> modelo = baseModelo(ctx);
-        modelo.put("usuarios", eventoServicio.listarTodos());
-        modelo.put("exito", ctx.queryParam("exito"));
-        modelo.put("error", ctx.queryParam("error"));
-        ctx.render("/templates/admin/usuarios.html", modelo);
-    }
-
-    private void bloquearUsuario(Context ctx)
-    {
-        try {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            usuarioServicio.cambiarEstado(id, false);
-            ctx.redirect("/admin/usuarios?exito=usuario bloqueado");
-        } catch ( Exception e )
-        {
-            ctx.redirect("/admin/usuarios?error=" + e.getMessage());
-        }
-    }
-
-    private void desbloquearUsuario(Context ctx)
-    {
-        try {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            usuarioServicio.cambiarEstado(id, true);
-            ctx.redirect("/admin/usuarios?exito=usuario desbloqueado");
-        } catch ( Exception e )
-        {
-            ctx.redirect("/admin/usuarios?error=" + e.getMessage());
-        }
-    }
-
-    private void cambiarRolUsuario(Context ctx)
-    {
-        try {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            String nuevoRol = ctx.formParam("rol");
-            Usuario.Rol rol = Usuario.Rol.valueOf(nuevoRol);
-            usuarioServicio.asignarRol(id, rol);
-            ctx.redirect("/admin/usuarios?exito=Rol actualizado");
-        } catch ( Exception e )
-        {
-            ctx.redirect("/admin/usuarios?error=" + e.getMessage());
-        }
-    }
-
-    private void adminEventos(Context ctx)
-    {
-        Map<String, Object> modelo = baseModelo(ctx);
-        modelo.put("eventos", eventoServicio.listarTodos());
-        ctx.render("/templates/admin/eventos.html", modelo);
-    }
-
-    private void eliminar(Context ctx)
-    {
-        try
-        {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            Usuario u = ctx.sessionAttribute("usuario");
-            eventoServicio.eliminar(id, u);
-            ctx.redirect("/admin/eventos?exito=Evento eliminado");
-        } catch (Exception e) {
-            ctx.redirect("/admin/eventos?error=" + e.getMessage());
-        }
-    }
-
     //Utilidad
-    private Map<String, Object> baseModelo(Context ctx)
-    {
-        Map<String, Object> modelo = new HashMap<>();
-        modelo.put("usuario", ctx.sessionAttribute("usuario"));
-        modelo.put("rol", ctx.sessionAttribute("rol"));
-        return modelo;
-    }
-
     private void verResumen(Context ctx)
     {
         Long id = Long.parseLong(ctx.pathParam("id"));
@@ -350,6 +238,32 @@ public class EventoControlador
         modelo.put("evento", evento);
         ctx.render("/templates/eventos/resumen.html", modelo);
 
+    }
+
+    private void verEscaner( Context ctx)
+    {
+        Long id = Long.parseLong(ctx.pathParam("id"));
+        Evento evento = eventoServicio.buscarPorId(id);
+        Usuario usuario = ctx.sessionAttribute("usuario");
+
+        if ( evento == null || !usuario.puedeGestionarEvento(evento) )
+        {
+            ctx.status(403).result("No autorizado");
+            return;
+        }
+
+        Map<String, Object> modelo = baseModelo(ctx);
+        modelo.put("evento", evento);
+        ctx.render("/templates/eventos/escaner.html", modelo);
+
+    }
+
+    private Map<String, Object> baseModelo(Context ctx)
+    {
+        Map<String, Object> modelo = new HashMap<>();
+        modelo.put("usuario", ctx.sessionAttribute("usuario"));
+        modelo.put("rol", ctx.sessionAttribute("rol"));
+        return modelo;
     }
 
 }
