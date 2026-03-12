@@ -5,6 +5,7 @@ import Modelo.InscripcionUsuario;
 import Modelo.Usuario;
 import Servicio.InscripcionServicio;
 import Servicio.EventoServicio;
+import Servicio.UsuarioServicio;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
@@ -17,6 +18,7 @@ public class EventoControlador
 {
     private final EventoServicio eventoServicio;
     private InscripcionServicio inscripcionServicio;
+    private UsuarioServicio usuarioServicio;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     public EventoControlador( EventoServicio eventoServicio ,InscripcionServicio inscripcionServicio )
@@ -41,6 +43,7 @@ public class EventoControlador
         app.post("/organizador/eventos/{id}/publicar", this::publicar);
         app.post("/organizador/eventos/{id}/despublicar", this::despublicar);
         app.post("/organizador/eventos/{id}/cancelar", this::cancelar);
+        app.get("/organizador/eventos/{id}/resumen", this::verResumen);
 
         //Admin
         app.get("/admin/dashboard", this::adminDashboard);
@@ -225,12 +228,81 @@ public class EventoControlador
     }
 
     //Admin
+    public void registrarRutasAdmin( Javalin app )
+    {
+        app.before("/admin/*", ctx -> {
+            Usuario u = ctx.sessionAttribute("usuario");
+
+            if ( u == null || !u.esAdmin() )
+            {
+                ctx.status(403).result("Acceso denegado")
+            }
+
+        });
+
+        app.get("/admin/dashboard", this::adminDashboard );
+
+        app.get("/admin/usuarios", this::adminUsuarios );
+        app.post("/admin/usuarios/{id}/bloquear", this::bloquearUsuario);
+        app.post("/admin/usuarios/{id}/desbloquear", this::desbloquearUsuario);
+        app.post("/admin/usuarios/{id}/rol", this::cambiarRolUsuario);
+
+    }
+
     private void adminDashboard(Context ctx)
     {
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("totalUsuarios", 0); // Llenar con datos reales
         modelo.put("totalEventos", eventoServicio.listarTodos().size());
-        ctx.render("/templates/admin/dashboard.html", modelo);
+        modelo.put("totalOrganizadores", usuarioServicio.contarPorRol(Usuario.Rol.ORGANIZADOR));
+        ctx.render("/templates/admin/panel.html", modelo);
+    }
+
+    private void adminUsuarios(Context ctx)
+    {
+        Map<String, Object> modelo = baseModelo(ctx);
+        modelo.put("usuarios", eventoServicio.listarTodos());
+        modelo.put("exito", ctx.queryParam("exito"));
+        modelo.put("error", ctx.queryParam("error"));
+        ctx.render("/templates/admin/usuarios.html", modelo);
+    }
+
+    private void bloquearUsuario(Context ctx)
+    {
+        try {
+            Long id = Long.parseLong(ctx.pathParam("id"));
+            usuarioServicio.cambiarEstado(id, false);
+            ctx.redirect("/admin/usuarios?exito=usuario bloqueado");
+        } catch ( Exception e )
+        {
+            ctx.redirect("/admin/usuarios?error=" + e.getMessage());
+        }
+    }
+
+    private void desbloquearUsuario(Context ctx)
+    {
+        try {
+            Long id = Long.parseLong(ctx.pathParam("id"));
+            usuarioServicio.cambiarEstado(id, true);
+            ctx.redirect("/admin/usuarios?exito=usuario desbloqueado");
+        } catch ( Exception e )
+        {
+            ctx.redirect("/admin/usuarios?error=" + e.getMessage());
+        }
+    }
+
+    private void cambiarRolUsuario(Context ctx)
+    {
+        try {
+            Long id = Long.parseLong(ctx.pathParam("id"));
+            String nuevoRol = ctx.formParam("rol");
+            Usuario.Rol rol = Usuario.Rol.valueOf(nuevoRol);
+            usuarioServicio.asignarRol(id, rol);
+            ctx.redirect("/admin/usuarios?exito=Rol actualizado");
+        } catch ( Exception e )
+        {
+            ctx.redirect("/admin/usuarios?error=" + e.getMessage());
+        }
     }
 
     private void adminEventos(Context ctx)
@@ -262,6 +334,22 @@ public class EventoControlador
         return modelo;
     }
 
+    private void verResumen(Context ctx)
+    {
+        Long id = Long.parseLong(ctx.pathParam("id"));
+        Evento evento = eventoServicio.buscarPorId(id);
+        Usuario usuario = ctx.sessionAttribute("usuario");
 
+        if ( evento == null || !usuario.puedeGestionarEvento(evento) )
+        {
+            ctx.status(403).result("No autorizado");
+            return;
+        }
+
+        Map<String, Object> modelo = baseModelo(ctx);
+        modelo.put("evento", evento);
+        ctx.render("/templates/eventos/resumen.html", modelo);
+
+    }
 
 }

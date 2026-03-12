@@ -5,6 +5,7 @@ import Controlador.AutorizacionControlador;
 import Controlador.EventoControlador;
 import Eventos.Configuracion.BaseDeDatosConfiguracion;
 import Eventos.Configuracion.JavalinConfiguracion;
+import Servicio.EstadisticaServicio;
 import Servicio.EventoServicio;
 import Servicio.InscripcionServicio;
 import Servicio.UsuarioServicio;
@@ -19,6 +20,7 @@ public class Main
         UsuarioServicio usuarioServicio = new UsuarioServicio();
         EventoServicio eventoServicio = new EventoServicio();
         InscripcionServicio inscripcionServicio = new InscripcionServicio();
+        EstadisticaServicio estadisticaServicio = new EstadisticaServicio();
 
         usuarioServicio.inicializarAdmin();
 
@@ -30,7 +32,7 @@ public class Main
         new EventoControlador(eventoServicio,inscripcionServicio).registrarRutas(app);
 
 
-        ApiControlador apiControlador=new ApiControlador(inscripcionServicio);
+        ApiControlador apiControlador=new ApiControlador(inscripcionServicio, eventoServicio, estadisticaServicio );
         apiControlador.registrarRutas(app);
 
 

@@ -1,7 +1,10 @@
 package Controlador;
 
+import Modelo.Evento;
 import Modelo.InscripcionUsuario;
 import Modelo.Usuario;
+import Servicio.EstadisticaServicio;
+import Servicio.EventoServicio;
 import Servicio.InscripcionServicio;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -9,14 +12,42 @@ import io.javalin.http.Context;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ApiControlador {
+public class ApiControlador
+{
     private final InscripcionServicio inscripcionServicio;
+    private final EventoServicio eventoServicio;
+    private final EstadisticaServicio estadisticaServicio;
 
-    public ApiControlador(InscripcionServicio inscripcionServicio) {
+    public ApiControlador(InscripcionServicio inscripcionServicio, EventoServicio eventoServicio, EstadisticaServicio estadisticaServicio ) {
         this.inscripcionServicio = inscripcionServicio;
+        this.eventoServicio = eventoServicio;
+        this.estadisticaServicio = new EstadisticaServicio();
+
     }
 
-    public void registrarRutas(Javalin app) {
+    public void registrarRutas(Javalin app)
+    {
+
+        // Endpoint público para consultar cupos disponibles (Punto 5)
+        app.get("/api/eventos/{id}/estadisticas", this::obtenerEstadisticas );
+        app.get("/api/eventos/{id}/cupos", ctx -> {
+            Long eventoId = Long.parseLong(ctx.pathParam("id"));
+            Evento evento = eventoServicio.buscarPorId(eventoId);
+
+            if (evento == null) {
+                ctx.status(404).json(Map.of("error", "Evento no encontrado"));
+                return;
+            }
+
+            ctx.json(Map.of(
+                    "eventoId", eventoId,
+                    "cupoMaximo", evento.getCupoMaximo(),
+                    "inscritos", evento.getTotalInscritos(),
+                    "cuposDisponibles", evento.getCuposDisponibles(),
+                    "tieneCupos", evento.tieneCuposDisponibles()
+            ));
+        });
+
         // Todas las rutas API requieren autenticación
         app.before("/api/*", this::requerirAutenticacion);
 
@@ -100,4 +131,34 @@ public class ApiControlador {
             ctx.status(500).json(Map.of("error", "Error interno del servidor"));
         }
     }
+
+    private void obtenerEstadisticas(Context ctx)
+    {
+        try {
+            Usuario usuario = ctx.sessionAttribute("usuario");
+            Long eventoId = Long.parseLong(ctx.pathParam("id"));
+
+            Evento evento = eventoServicio.buscarPorId(eventoId);
+
+            if ( evento == null )
+            {
+                ctx.status(404).json(Map.of("error", "No evento encontrado"));
+                return;
+            }
+
+            if ( !usuario.puedeGestionarEvento(evento))
+            {
+                ctx.status(404).json(Map.of("error", "No autorizado"));
+                return;
+            }
+
+            Map<String, Object> stats = estadisticaServicio.obtenerEstadisticasCompletas(eventoId);
+            ctx.json(stats);
+
+        } catch ( Exception e )
+        {
+            ctx.status(500).json(Map.of("error", e.getMessage()));
+        }
+    }
+
 }

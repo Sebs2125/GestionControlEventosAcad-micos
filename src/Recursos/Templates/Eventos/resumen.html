@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+    <title>Resumen del Evento</title>
+</head>
+<body>
+<main>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/organizador/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Resumen</li>
+                </ol>
+            </nav>
+            <h2 th:text="${evento.titulo}">Título del Evento</h2>
+        </div>
+        <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/escaner'}" class="btn btn-primary">
+            <i class="bi bi-qr-code-scan me-2"></i>Escanear QR
+        </a>
+    </div>
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase mb-2 opacity-75">Total Inscritos</h6>
+                            <h2 class="mb-0" id="total-inscritos">-</h2>
+                        </div>
+                        <i class="bi bi-people-fill fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase mb-2 opacity-75">Total Asistentes</h6>
+                            <h2 class="mb-0" id="total-asistentes">-</h2>
+                        </div>
+                        <i class="bi bi-check-circle-fill fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase mb-2 opacity-75">% Asistencia</h6>
+                            <h2 class="mb-0" id="porcentaje-asistencia">-</h2>
+                        </div>
+                        <i class="bi bi-graph-up fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase mb-2 opacity-75">Cupos Disponibles</h6>
+                            <h2 class="mb-0" id="cupos-disponibles">-</h2>
+                        </div>
+                        <i class="bi bi-ticket-perforated fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Gráfico de Inscripciones por Día -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Inscripciones por Día</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartInscripciones" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Asistencia por Hora -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Asistencia por Hora</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartAsistencia" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de inscritos -->
+    <div class="card shadow">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Lista de Inscritos</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="exportarCSV()">
+                <i class="bi bi-download me-1"></i>Exportar CSV
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="tabla-inscritos">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Participante</th>
+                        <th>Email</th>
+                        <th>Fecha Inscripción</th>
+                        <th>Asistencia</th>
+                        <th>Hora Asistencia</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tbody-inscritos">
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Cargando datos...
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const eventoId = [[${evento.id}]];
+
+        // Gráficos
+        let chartInscripciones = null;
+        let chartAsistencia = null;
+
+        async function cargarEstadisticas() {
+            try {
+                const response = await fetch(`/api/eventos/${eventoId}/estadisticas`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error cargando estadísticas');
+                }
+
+                // Actualizar tarjetas
+                const r = data.resumen;
+                document.getElementById('total-inscritos').textContent = r.totalInscritos;
+                document.getElementById('total-asistentes').textContent = r.totalAsistentes;
+                document.getElementById('porcentaje-asistencia').textContent = r.porcentajeAsistencia + '%';
+                document.getElementById('cupos-disponibles').textContent = r.cuposDisponibles;
+
+                // Crear gráfico de inscripciones por día
+                crearChartInscripciones(data.inscripcionesPorDia);
+
+                // Crear gráfico de asistencia por hora
+                crearChartAsistencia(data.asistenciaPorHora);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error cargando estadísticas: ' + error.message);
+            }
+        }
+
+        function crearChartInscripciones(datos) {
+            const ctx = document.getElementById('chartInscripciones').getContext('2d');
+
+            const labels = datos.map(d => d.fecha);
+            const values = datos.map(d => d.cantidad);
+
+            if (chartInscripciones) {
+                chartInscripciones.destroy();
+            }
+
+            chartInscripciones = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Inscripciones',
+                        data: values,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function crearChartAsistencia(datos) {
+            const ctx = document.getElementById('chartAsistencia').getContext('2d');
+
+            const labels = datos.map(d => d.hora);
+            const values = datos.map(d => d.cantidad);
+
+            if (chartAsistencia) {
+                chartAsistencia.destroy();
+            }
+
+            chartAsistencia = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Asistentes',
+                        data: values,
+                        backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                        borderColor: 'rgba(25, 135, 84, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'rgba(25, 135, 84, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportarCSV() {
+            // Implementar exportación si es necesario
+            alert('Función de exportación en desarrollo');
+        }
+
+        // Cargar al iniciar
+        document.addEventListener('DOMContentLoaded', cargarEstadisticas);
+
+        // Recargar cada 30 segundos
+        setInterval(cargarEstadisticas, 30000);
+        /*]]>*/
+    </script>
+</main>
+</body>
+</html>
