@@ -84,3 +84,53 @@ main {
         padding: 0.25rem 0.5rem;
     }
 }
+/* Estilos para inscripción */
+.progress-bar-success {
+    background-color: #28a745;
+}
+
+.progress-bar-danger {
+    background-color: #dc3545;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+}
+
+/* QR Code container */
+#qrcode {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+/* Badges de estado */
+.badge-disponible {
+    background-color: #28a745;
+}
+
+.badge-agotado {
+    background-color: #dc3545;
+}
+
+/* Animaciones */
+.btn-inscribir {
+    transition: all 0.3s ease;
+}
+
+.btn-inscribir:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Lista de eventos */
+.list-group-item {
+    transition: background-color 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}

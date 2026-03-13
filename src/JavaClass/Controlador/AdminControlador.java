@@ -24,27 +24,19 @@ public class AdminControlador
     {
         app.before("/admin/*", ctx -> {
             Usuario usuario = ctx.sessionAttribute("usuario");
-
             if ( usuario == null || !usuario.esAdmin() )
             {
                 ctx.status( 403 ).result("Acceso denegado");
             }
-
         });
 
-        //Dashboard admin
         app.get("/admin/dashboard", this::dashboard );
-
-        //Gestion de usuario (Referido al punto 8)
         app.get("/admin/usuarios", this::listarUsuarios);
         app.post("/admin/usuarios/{id}/bloquear", this::bloquearUsuario);
         app.post("/admin/usuarios/{id}/desbloquear", this::desbloquearUsuario);
         app.post("/admin/usuarios/{id}/rol", this::cambiarRolUsuario);
-
-        // Gestión de eventos
         app.get("/admin/eventos", this::listarEventos);
         app.post("/admin/eventos/{id}/eliminar", this::eliminarEvento);
-
     }
 
     private void dashboard( Context ctx )
@@ -55,7 +47,7 @@ public class AdminControlador
         modelo.put("totalOrganizadores", usuarioServicio.contarPorRol(Usuario.Rol.ORGANIZADOR));
         modelo.put("totalParticipantes", usuarioServicio.contarPorRol(Usuario.Rol.PARTICIPANTE));
         modelo.put("ultimosEventos", eventoServicio.listarTodos());
-        ctx.render("/templates/admin/panel.html", modelo);
+        ctx.render("/admin/panel.html", modelo);
     }
 
     private void listarUsuarios( Context ctx )
@@ -64,7 +56,7 @@ public class AdminControlador
         modelo.put("usuarios", usuarioServicio.listarTodos());
         modelo.put("exito", ctx.queryParam("exito"));
         modelo.put("error", ctx.queryParam("error"));
-        ctx.render("/templates/admin/usuarios.html", modelo);
+        ctx.render("/admin/usuarios.html", modelo);
     }
 
     private void bloquearUsuario( Context ctx )
@@ -108,14 +100,13 @@ public class AdminControlador
         }
     }
 
-    //Eventos:
     private void listarEventos( Context ctx )
     {
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("eventos", eventoServicio.listarTodos());
         modelo.put("exito", ctx.queryParam("exito"));
         modelo.put("error", ctx.queryParam("error"));
-        ctx.render("/templates/admin/eventos.html", modelo);
+        ctx.render("/admin/eventos.html", modelo);
     }
 
     private void eliminarEvento( Context ctx )
@@ -132,7 +123,6 @@ public class AdminControlador
         }
     }
 
-    //Para ser util en el software
     private Map<String, Object> baseModelo( Context ctx )
     {
         Map<String, Object> modelo = new HashMap<>();
@@ -140,5 +130,4 @@ public class AdminControlador
         modelo.put("rol", ctx.sessionAttribute("rol"));
         return modelo;
     }
-
 }

@@ -16,24 +16,35 @@
 
             <div class="card shadow">
                 <div class="card-header bg-white py-3">
-                    <h4 class="mb-0" th:text="${editar} ? '✏️ Editar Evento' : '➕ Crear Nuevo Evento'">Título</h4>
+                    <h4 class="mb-0" th:text="${editar} ? 'Editar Evento' : 'Crear Nuevo Evento'">Título</h4>
                 </div>
                 <div class="card-body p-4">
                     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-                    <form th:action="${editar} ? @{'/organizador/eventos/' + ${evento.id} + '/editar'} : '/organizador/eventos'"
+                    <form th:if="${editar}"
+                          th:action="@{'/organizador/eventos/' + ${evento.id} + '/editar'}"
                           method="post" class="needs-validation" novalidate>
+                        <!-- contenido del formulario -->
+                    </form>
+
+                    <form th:unless="${editar}"
+                          th:action="@{/organizador/eventos}"
+                          method="post" class="needs-validation" novalidate>
+                        <!-- contenido del formulario -->
+                    </form>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Título del Evento *</label>
                             <input type="text" name="titulo" class="form-control form-control-lg"
-                                   th:value="${evento?.titulo}" required maxlength="200">
+                                   th:value="${evento != null ? evento.titulo : ''}"
+                                   required maxlength="200">
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Descripción</label>
                             <textarea name="descripcion" class="form-control" rows="4"
-                                      th:text="${evento?.descripcion}" maxlength="2000"></textarea>
+                                      th:text="${evento != null ? evento.descripcion : ''}"
+                                      maxlength="2000"></textarea>
                         </div>
 
                         <div class="row">
@@ -45,14 +56,16 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Lugar *</label>
                                 <input type="text" name="lugar" class="form-control"
-                                       th:value="${evento?.lugar}" required maxlength="200">
+                                       th:value="${evento != null ? evento.lugar : ''}"
+                                       required maxlength="200">
                             </div>
                         </div>
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Cupo Máximo *</label>
                             <input type="number" name="cupoMaximo" class="form-control"
-                                   th:value="${evento?.cupoMaximo} ?: 50" min="1" max="10000" required>
+                                   th:value="${evento != null ? evento.cupoMaximo : 50}"
+                                   min="1" max="10000" required>
                             <div class="form-text">Máximo número de participantes permitidos.</div>
                         </div>
 

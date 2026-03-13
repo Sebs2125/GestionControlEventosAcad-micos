@@ -1,10 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Eventos - Vista Lista', ~{::main})}">
+    <title>Eventos</title>
 </head>
 <body>
+<main>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list me-2"></i>Eventos Disponibles</h2>
+        <div class="btn-group">
+            <a href="/eventos" class="btn btn-primary active"><i class="bi bi-list"></i> Lista</a>
+            <a href="/eventos/grid" class="btn btn-outline-primary"><i class="bi bi-grid"></i> Tarjetas</a>
+        </div>
+    </div>
 
+    <!-- Lista de Eventos -->
+    <div class="card shadow-sm">
+        <div class="list-group list-group-flush">
+            <div th:each="evento : ${eventos}" class="list-group-item p-4">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h5 class="mb-0" th:text="${evento.titulo}">Título del Evento</h5>
+                            <span class="badge bg-success" th:if="${evento.tieneCuposDisponibles()}">Disponible</span>
+                            <span class="badge bg-danger" th:unless="${evento.tieneCuposDisponibles()}">Agotado</span>
+                        </div>
+                        <p class="text-muted mb-2" th:text="${#strings.abbreviate(evento.descripcion, 150)}">Descripción...</p>
+
+                        <div class="d-flex gap-3 text-muted small">
+                            <span><i class="bi bi-calendar me-1 text-primary"></i>
+                                <span th:text="${#temporals.format(evento.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span>
+                            </span>
+                            <span><i class="bi bi-geo-alt me-1 text-danger"></i>
+                                <span th:text="${evento.lugar}">Lugar</span>
+                            </span>
+                            <span><i class="bi bi-people me-1 text-info"></i>
+                                <span th:text="${evento.cuposDisponibles}">0</span> de <span th:text="${evento.cupoMaximo}">0</span> cupos
+                            </span>
+                        </div>
+                    </div>
+                    <a th:href="@{'/eventos/' + ${evento.id}}" class="btn btn-outline-primary ms-3">
+                        Ver Detalles <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Sin eventos -->
+            <div th:if="${#lists.isEmpty(eventos)}" class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-x display-1 d-block mb-3"></i>
+                <h4>No hay eventos disponibles</h4>
+                <p>Vuelve más tarde para ver nuevos eventos académicos.</p>
+            </div>
+        </div>
+    </div>
+</main>
 </body>
 </html>

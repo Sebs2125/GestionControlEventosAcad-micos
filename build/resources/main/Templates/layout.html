@@ -5,26 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${titulo} + ' - Eventos Académicos'">Eventos Académicos</title>
 
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="/css/estilos.css">
 </head>
 <body class="bg-light">
 
-<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">
             <i class="bi bi-calendar-event me-2"></i>Eventos Académicos
         </a>
-
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
@@ -34,17 +28,13 @@
                     <a class="nav-link" href="/eventos/grid"><i class="bi bi-grid me-1"></i>Tarjetas</a>
                 </li>
             </ul>
-
             <ul class="navbar-nav">
-                <!-- Sin sesión -->
                 <li th:if="${session.usuario == null}" class="nav-item">
                     <a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
                 </li>
                 <li th:if="${session.usuario == null}" class="nav-item">
                     <a class="nav-link" href="/registro"><i class="bi bi-person-plus me-1"></i>Registro</a>
                 </li>
-
-                <!-- Con sesión -->
                 <li th:if="${session.usuario != null}" class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-1"></i>
@@ -52,13 +42,11 @@
                         <span class="badge bg-secondary ms-1" th:text="${session.rol}">ROL</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <!-- Menú Organizador -->
                         <li th:if="${session.rol == 'ORGANIZADOR' or session.rol == 'ADMINISTRADOR'}">
                             <a class="dropdown-item" href="/organizador/dashboard">
                                 <i class="bi bi-speedometer2 me-2"></i>Dashboard
                             </a>
                         </li>
-                        <!-- Menú Admin -->
                         <li th:if="${session.rol == 'ADMINISTRADOR'}">
                             <a class="dropdown-item" href="/admin/eventos">
                                 <i class="bi bi-shield-lock me-2"></i>Administrar
@@ -77,21 +65,17 @@
     </div>
 </nav>
 
-<!-- Contenido principal -->
-<main class="container py-4" th:insert="${contenido}">
-    <!-- Contenido se inserta aquí -->
+<!-- CAMBIO CLAVE: th:replace en vez de th:insert -->
+<main class="container py-4" th:replace="${contenido}">
 </main>
 
-<!-- Footer -->
 <footer class="bg-white border-top py-4 mt-5">
     <div class="container text-center text-muted">
         <small>&copy; 2024 Sistema de Gestión de Eventos Académicos - PUCMM</small>
     </div>
 </footer>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Scripts personalizados -->
 <script src="/js/app.js"></script>
 </body>
 </html>

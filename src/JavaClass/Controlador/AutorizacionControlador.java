@@ -27,15 +27,13 @@ public class AutorizacionControlador
 
         app.before( ctx -> {
             String path = ctx.path();
-
-            if (esRutaProtegida(path) && ctx.sessionAttribute("usuario") == null )
+            if (esRutaProtegida(path) && ctx.sessionAttribute("usuario") == null)
             {
                 ctx.redirect("/login");
             }
         });
 
         app.before("/organizador/*", this::requerirOrganizador);
-
     }
 
     private void mostrarLogin(Context ctx)
@@ -43,50 +41,48 @@ public class AutorizacionControlador
         Map<String, Object> modelo = new HashMap<>();
         modelo.put("error", ctx.queryParam("error"));
         modelo.put("exito", ctx.queryParam("exito"));
-        ctx.render("/templates/login.html", modelo);
+        ctx.render("/login.html", modelo);
     }
 
-    private void procesarLogin(Context ctx )
+    private void procesarLogin(Context ctx)
     {
         String username = ctx.formParam("username");
         String password = ctx.formParam("password");
 
-        Usuario usuario = usuarioServicio.validarLogin(username, password );
+        Usuario usuario = usuarioServicio.validarLogin(username, password);
 
-        if ( usuario == null )
+        if ( usuario != null )  // CORREGIDO: era == null
         {
-            ctx.sessionAttribute("usuario", usuario );
-            ctx.sessionAttribute("rol", usuario.getRol().toString() );
+            ctx.sessionAttribute("usuario", usuario);
+            ctx.sessionAttribute("rol", usuario.getRol().toString());
 
             String redirect = ctx.queryParam("redirect");
 
-            if ( redirect != null && !redirect.isEmpty() )
+            if (redirect != null && !redirect.isEmpty())
             {
-                ctx.redirect( redirect );
+                ctx.redirect(redirect);
             }
             else
             {
-                switch ( usuario.getRol() )
+                switch (usuario.getRol())
                 {
                     case ADMINISTRADOR -> ctx.redirect("/admin/dashboard");
-                    case ORGANIZADOR -> ctx.redirect("/organizador/dashboard");
-                    default -> ctx.redirect("/eventos");
+                    case ORGANIZADOR   -> ctx.redirect("/organizador/dashboard");
+                    default            -> ctx.redirect("/eventos");
                 }
             }
-
         }
         else
         {
             ctx.redirect("/login?error=Credenciales invalidas");
         }
-
     }
 
     private void mostrarRegistro(Context ctx)
     {
         Map<String, Object> modelo = new HashMap<>();
         modelo.put("error", ctx.queryParam("error"));
-        ctx.render("/templates/registro.html", modelo);
+        ctx.render("/registro.html", modelo);
     }
 
     private void procesarRegistro(Context ctx)
@@ -95,13 +91,13 @@ public class AutorizacionControlador
         {
             String username = ctx.formParam("username");
             String password = ctx.formParam("password");
-            String nombre = ctx.formParam("nombre");
-            String email = ctx.formParam("email");
+            String nombre   = ctx.formParam("nombre");
+            String email    = ctx.formParam("email");
 
             usuarioServicio.crearUsuario(username, password, nombre, email, Usuario.Rol.PARTICIPANTE);
 
-            ctx.redirect("/login?exito=Registro exitoso. Inicia sesión.");
-        } catch (Exception e )
+            ctx.redirect("/login?exito=Registro exitoso. Inicia sesion.");
+        } catch (Exception e)
         {
             ctx.redirect("/registro?error=" + e.getMessage());
         }
@@ -116,7 +112,6 @@ public class AutorizacionControlador
     private void requerirOrganizador(Context ctx)
     {
         Usuario u = ctx.sessionAttribute("usuario");
-
         if (u == null || !u.esOrganizador())
         {
             ctx.status(403).result("Acceso denegado");
@@ -130,5 +125,4 @@ public class AutorizacionControlador
                 path.startsWith("/api/") ||
                 path.startsWith("/dashboard");
     }
-
 }

@@ -70,13 +70,13 @@ dependencies {
 }
 
 application {
-    mainClass = 'edu.pucmm.eventos.Main'
+    mainClass = 'Eventos.Main'
 }
 
 shadowJar {
     archiveClassifier.set('')
     manifest {
-        attributes 'Main-Class': 'edu.pucmm.eventos.Main'
+        attributes 'Main-Class': 'Eventos.Main'
     }
     mergeServiceFiles()
 }

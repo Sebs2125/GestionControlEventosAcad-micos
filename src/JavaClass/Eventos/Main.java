@@ -44,8 +44,8 @@ public class Main
 
         Runtime.getRuntime().addShutdownHook(new Thread(BaseDeDatosConfiguracion::shutdown));
 
-        System.out.println("🚀 Servidor iniciado en puerto: " + puerto);
-        System.out.println("🌐 URL: http://localhost:" + puerto);
+        System.out.println("Servidor iniciado en puerto: " + puerto);
+        System.out.println("URL: http://localhost:" + puerto);
 
     }
 }

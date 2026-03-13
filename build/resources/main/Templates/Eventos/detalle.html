@@ -1,10 +1,288 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout(${evento.titulo}, ~{::main})}">
+    <title>Detalle Evento</title>
 </head>
 <body>
+<main>
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/eventos">Eventos</a></li>
+            <li class="breadcrumb-item active" th:text="${evento.titulo}">Título</li>
+        </ol>
+    </nav>
 
+    <div class="row">
+        <!-- Info Principal -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0" th:text="${evento.titulo}">Título</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small fw-bold mb-2">Fecha y Hora</h6>
+                            <p class="mb-0 fs-5">
+                                <i class="bi bi-calendar-event text-primary me-2"></i>
+                                <span th:text="${#temporals.format(evento.fechaHora, 'EEEE, dd MMMM yyyy')}">Fecha</span><br>
+                                <small class="text-muted ms-4" th:text="${#temporals.format(evento.fechaHora, 'HH:mm')} + ' hrs'">Hora</small>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small fw-bold mb-2">Lugar</h6>
+                            <p class="mb-0 fs-5">
+                                <i class="bi bi-geo-alt text-danger me-2"></i>
+                                <span th:text="${evento.lugar}">Lugar</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <h6 class="text-muted text-uppercase small fw-bold mb-2">Descripción</h6>
+                    <p class="lead" th:text="${evento.descripcion} ?: 'Sin descripción disponible.'">Descripción...</p>
+
+                    <hr class="my-4">
+
+                    <!-- Organizador -->
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle p-3 me-3">
+                            <i class="bi bi-person-circle fs-4 text-primary"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Organizado por</small>
+                            <span class="fw-bold" th:text="${evento.organizador.nombre}">Organizador</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Inscripción -->
+        <div class="col-lg-4">
+            <div class="card shadow border-0 sticky-top" style="top: 20px; z-index: 100;">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Inscripción</h5>
+
+                    <!-- Estado de Cupos -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                        <span class="text-muted">Cupos disponibles</span>
+                        <span class="fs-4 fw-bold cupos-disponibles"
+                              th:class="${evento.cuposDisponibles > 0} ? 'text-success' : 'text-danger'"
+                              th:text="${evento.cuposDisponibles}">0</span>
+                    </div>
+
+                    <div class="progress mb-4" style="height: 8px;">
+                        <div class="progress-bar" role="progressbar"
+                             th:style="'width:' + ${(evento.totalInscritos * 100.0 / evento.cupoMaximo)} + '%'"
+                             th:class="${evento.cuposDisponibles > 0} ? 'progress-bar-success bg-success' : 'progress-bar-danger bg-danger'">
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div id="mensaje-inscripcion" class="alert d-none mb-3"></div>
+
+                    <!-- Botón Inscribirse (Usuario logueado) -->
+                    <div th:if="${session.usuario != null and session.rol == 'PARTICIPANTE'}">
+                        <div th:if="${inscripcion == null}">
+                            <button th:if="${evento.cuposDisponibles > 0 and evento.estaActivo()}"
+                                    onclick="inscribirse()"
+                                    class="btn btn-success w-100 btn-lg mb-2"
+                                    th:data-evento-id="${evento.id}">
+                                <i class="bi bi-check-circle me-2"></i>Inscribirme
+                            </button>
+                            <button th:unless="${evento.cuposDisponibles > 0 and evento.estaActivo()}"
+                                    disabled
+                                    class="btn btn-secondary w-100 btn-lg mb-2">
+                                <span th:if="${!evento.estaActivo()}">Evento finalizado</span>
+                                <span th:unless="${evento.cuposDisponibles > 0}">Cupos agotados</span>
+                            </button>
+                        </div>
+
+                        <!-- Ya inscrito -->
+                        <div th:if="${inscripcion != null and inscripcion.estado.name() == 'ACTIVA'}" class="text-center">
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle-fill me-2"></i>¡Ya estás inscrito!
+                            </div>
+
+                            <!-- QR Code -->
+                            <div class="mb-3">
+                                <h6 class="text-muted small">Tu código QR de acceso:</h6>
+                                <div id="qrcode" class="d-flex justify-content-center my-3"></div>
+                                <small class="text-muted">Token: <span th:text="${inscripcion.tokenQR}">token</span></small>
+                            </div>
+
+                            <button onclick="cancelarInscripcion()"
+                                    class="btn btn-outline-danger w-100"
+                                    th:data-inscripcion-id="${inscripcion.id}"
+                                    th:disabled="${!evento.estaActivo()}">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar inscripción
+                            </button>
+                        </div>
+
+                        <!-- Inscripción cancelada -->
+                        <div th:if="${inscripcion != null and inscripcion.estado.name() == 'CANCELADA'}" class="text-center">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Inscripción cancelada
+                            </div>
+                            <button th:if="${evento.cuposDisponibles > 0 and evento.estaActivo()}"
+                                    onclick="inscribirse()"
+                                    class="btn btn-success w-100"
+                                    th:data-evento-id="${evento.id}">
+                                Volver a inscribirme
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- No logueado -->
+                    <div th:if="${session.usuario == null}" class="text-center">
+                        <p class="text-muted mb-3">Inicia sesión para inscribirte en este evento</p>
+                        <a href="/login?redirect=/eventos/[[${evento.id}]]" class="btn btn-primary w-100">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                        </a>
+                    </div>
+
+                    <!-- Rol no permite -->
+                    <div th:if="${session.usuario != null and (session.rol == 'ADMINISTRADOR' or session.rol == 'ORGANIZADOR')}" class="text-center">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>Los administradores y organizadores no pueden inscribirse en eventos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts para QR y AJAX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const eventoId = [[${evento.id}]];
+        const usuarioLogueado = [[${session.usuario != null}]];
+
+        // Generar QR si hay inscripción activa
+        const inscripcion = /*[[${inscripcion}]]*/ null;
+        if (inscripcion && inscripcion.estado === 'ACTIVA') {
+            const qrData = JSON.stringify({
+                eventoId: eventoId,
+                usuarioId: /*[[${session.usuario?.id}]]*/ 0,
+                token: inscripcion.tokenQR
+            });
+
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrData,
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function mostrarMensaje(mensaje, tipo) {
+            const div = document.getElementById('mensaje-inscripcion');
+            div.className = `alert alert-${tipo} mb-3`;
+            div.textContent = mensaje;
+            div.classList.remove('d-none');
+        }
+
+        async function inscribirse() {
+            const btn = document.querySelector('[onclick="inscribirse()"]');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+
+            try {
+                const response = await fetch(`/api/inscripciones`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ eventoId: eventoId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mostrarMensaje('¡Inscripción exitosa!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    mostrarMensaje(data.error || 'Error al inscribirse', 'danger');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Inscribirme';
+                }
+            } catch (error) {
+                mostrarMensaje('Error de conexión', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Inscribirme';
+            }
+        }
+
+        async function cancelarInscripcion() {
+            if (!confirm('¿Estás seguro de cancelar tu inscripción?')) return;
+
+            const btn = document.querySelector('[onclick="cancelarInscripcion()"]');
+            const inscripcionId = btn.dataset.inscripcionId;
+
+            try {
+                const response = await fetch(`/api/inscripciones/${inscripcionId}/cancelar`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    mostrarMensaje('Inscripción cancelada', 'warning');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const data = await response.json();
+                    mostrarMensaje(data.error || 'Error al cancelar', 'danger');
+                }
+            } catch (error) {
+                mostrarMensaje('Error de conexión', 'danger');
+            }
+        }
+
+                // VERIFICACIÓN DE CUPOS EN TIEMPO REAL - PUNTO 5
+        async function verificarCuposDisponibles() {
+            try {
+                const response = await fetch(`/api/eventos/${eventoId}/cupos`);
+                const data = await response.json();
+
+                // Actualizar número mostrado
+                const cuposSpan = document.querySelector('.cupos-disponibles');
+                if (cuposSpan) {
+                    cuposSpan.textContent = data.cuposDisponibles;
+                    // Actualizar color según disponibilidad
+                    cuposSpan.className = `fs-4 fw-bold cupos-disponibles ${data.cuposDisponibles > 0 ? 'text-success' : 'text-danger'}`;
+                }
+
+                // Actualizar barra de progreso
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    const porcentaje = (data.inscritos * 100.0 / data.cupoMaximo);
+                    progressBar.style.width = porcentaje + '%';
+                    progressBar.className = `progress-bar ${data.cuposDisponibles > 0 ? 'bg-success' : 'bg-danger'}`;
+                }
+
+                // Deshabilitar botón si no hay cupos
+                const btnInscribirse = document.querySelector('[onclick="inscribirse()"]');
+                if (btnInscribirse && data.cuposDisponibles <= 0) {
+                    btnInscribirse.disabled = true;
+                    btnInscribirse.innerHTML = '<i class="bi bi-x-circle me-2"></i>Cupos agotados';
+                    btnInscribirse.classList.remove('btn-success');
+                    btnInscribirse.classList.add('btn-secondary');
+                }
+
+            } catch (e) {
+                console.error('Error verificando cupos:', e);
+            }
+        }
+
+        // Verificar cupos al cargar y cada 30 segundos (solo si hay usuario logueado)
+        if (usuarioLogueado) {
+            verificarCuposDisponibles();
+            setInterval(verificarCuposDisponibles, 30000); // 30 segundos
+        }
+         /*]]>*/
+    </script>
+</main>
 </body>
 </html>

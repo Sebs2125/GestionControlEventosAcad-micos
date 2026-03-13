@@ -9,7 +9,7 @@ import java.util.Set;
 @Entity
 @Table(name= "usuario")
 
-public class Usuario
+public class Usuario implements java.io.Serializable
 {
         public enum Rol
         {
@@ -48,6 +48,11 @@ public class Usuario
         private Set<InscripcionUsuario> inscripciones = new HashSet<>();
 
         public Usuario(){}
+
+
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
+    }
 
     public Usuario(String username, String password, String nombre, String email, Rol rol ) {
         this.username = username;

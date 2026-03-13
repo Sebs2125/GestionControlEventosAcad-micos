@@ -1,10 +1,111 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Registro', ~{::main})}">
+    <title>Registro</title>
 </head>
 <body>
+<main>
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-plus-fill display-4 text-primary"></i>
+                        <h3 class="mt-3">Crear Cuenta</h3>
+                        <p class="text-muted">Regístrate para acceder a los eventos</p>
+                    </div>
 
+                    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+                    <form action="/registro" method="post" class="needs-validation" novalidate
+                          onsubmit="return validarFormulario()">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre Completo</label>
+                            <input type="text" name="nombre" id="nombre"
+                                   class="form-control" required minlength="3" maxlength="100"
+                                   placeholder="Ej. María García">
+                            <div class="invalid-feedback">El nombre es obligatorio (mínimo 3 caracteres).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Usuario</label>
+                            <input type="text" name="username" id="username"
+                                   class="form-control" required minlength="3" maxlength="50"
+                                   placeholder="Ej. mgarcia">
+                            <div class="invalid-feedback">El usuario debe tener al menos 3 caracteres.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" name="email" id="email"
+                                   class="form-control" required
+                                   placeholder="correo@universidad.edu">
+                            <div class="invalid-feedback">Introduce un email válido.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Contraseña</label>
+                            <input type="password" name="password" id="password"
+                                   class="form-control" required minlength="6"
+                                   placeholder="Mínimo 6 caracteres">
+                            <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Confirmar Contraseña</label>
+                            <input type="password" id="confirmar-password"
+                                   class="form-control" required
+                                   placeholder="Repite tu contraseña">
+                            <div class="invalid-feedback" id="feedback-confirmar">
+                                Las contraseñas no coinciden.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-person-check me-2"></i>Registrarme
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+                    <p class="text-center mb-0">
+                        ¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function validarFormulario() {
+            const form = document.querySelector('.needs-validation');
+            const pass    = document.getElementById('password');
+            const confirm = document.getElementById('confirmar-password');
+
+            // Validar que las contraseñas coincidan
+            if ( pass.value !== confirm.value ) {
+                confirm.setCustomValidity('Las contraseñas no coinciden');
+                confirm.classList.add('is-invalid');
+                form.classList.add('was-validated');
+                return false;
+            } else {
+                confirm.setCustomValidity('');
+            }
+
+            if ( !form.checkValidity() ) {
+                form.classList.add('was-validated');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Limpiar error de coincidencia al tipear
+        document.getElementById('confirmar-password').addEventListener('input', function () {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+        });
+    </script>
+</main>
 </body>
 </html>

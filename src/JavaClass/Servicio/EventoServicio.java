@@ -208,15 +208,14 @@ public class EventoServicio
 
         try {
             return session.createQuery(
-                    "FROM Evento e WHERE e.estado = 'PUBLICADO'" +
-                            "AND e.fechaHora > :ahora ORDER BY e.fechaHora ASC", Evento.class)
-                    .setParameter("ahora", LocalDate.now())
+                            "FROM Evento e WHERE e.estado = 'PUBLICADO' " +
+                                    "AND e.fechaHora > :ahora ORDER BY e.fechaHora ASC", Evento.class)
+                    .setParameter("ahora", LocalDateTime.now())  // <-- este es el cambio
                     .list();
 
         } finally {
             session.close();
         }
-
     }
 
     public List<Evento> listarPorOrganizador(Long organizadorId)
