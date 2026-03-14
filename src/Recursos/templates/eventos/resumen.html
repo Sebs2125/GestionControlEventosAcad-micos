@@ -6,8 +6,9 @@
 <body>
 <main>
 
-    <!-- Encabezado -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4"
+         id="resumen-container"
+         th:data-evento-id="${evento.id}">
         <div>
             <nav aria-label="breadcrumb" class="mb-1">
                 <ol class="breadcrumb mb-0">
@@ -22,7 +23,7 @@
         </a>
     </div>
 
-    <!-- Tarjetas de estadísticas (cargadas vía Fetch) -->
+    <!-- Tarjetas -->
     <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="card bg-primary text-white shadow-sm">
@@ -78,7 +79,7 @@
         </div>
     </div>
 
-    <!-- Gráficos (punto 7d) -->
+    <!-- Gráficos -->
     <div class="row g-4 mb-4">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
@@ -108,7 +109,7 @@
         </div>
     </div>
 
-    <!-- Tabla de inscritos (punto 7) -->
+    <!-- Tabla de inscritos REAL -->
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <span class="fw-bold"><i class="bi bi-list-check me-2"></i>Lista de Inscritos</span>
@@ -117,7 +118,7 @@
             </button>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle" id="tabla-inscritos">
+            <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                 <tr>
                     <th>Participante</th>
@@ -138,19 +139,18 @@
         </div>
     </div>
 
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const eventoId = [[${evento.id}]];
+    <script>
+        // ID leído del atributo data — sin th:inline para evitar conflictos Thymeleaf
+        const eventoId = document.getElementById('resumen-container').getAttribute('data-evento-id');
+
         let chartInscripciones = null;
         let chartAsistencia    = null;
 
-        // ── Carga principal de estadísticas vía Fetch API ────────────────────
         async function cargarEstadisticas() {
             try {
-                const resp = await fetch(`/api/eventos/${eventoId}/estadisticas`);
+                const resp = await fetch('/api/eventos/' + eventoId + '/estadisticas');
                 if (!resp.ok) {
                     const err = await resp.json();
                     throw new Error(err.error || 'Error del servidor');
@@ -158,23 +158,57 @@
                 const data = await resp.json();
                 const r    = data.resumen;
 
-                // Actualizar tarjetas
-                document.getElementById('total-inscritos').textContent      = r.totalInscritos;
-                document.getElementById('total-asistentes').textContent     = r.totalAsistentes;
+                document.getElementById('total-inscritos').textContent       = r.totalInscritos;
+                document.getElementById('total-asistentes').textContent      = r.totalAsistentes;
                 document.getElementById('porcentaje-asistencia').textContent = r.porcentajeAsistencia + '%';
-                document.getElementById('cupos-disponibles').textContent    = r.cuposDisponibles;
+                document.getElementById('cupos-disponibles').textContent     = r.cuposDisponibles;
 
-                // Renderizar gráficos
                 renderChartInscripciones(data.inscripcionesPorDia);
-                renderChartAsistencia(data.asistenciasPorHora); // key correcta del backend
-
-                // Rellenar tabla con los datos del resumen
-                actualizarTablaInscritos(r);
+                renderChartAsistencia(data.asistenciasPorHora);
 
             } catch (err) {
                 console.error('Error cargando estadísticas:', err);
                 ['total-inscritos','total-asistentes','porcentaje-asistencia','cupos-disponibles']
-                    .forEach(id => document.getElementById(id).textContent = '—');
+                    .forEach(function(id) { document.getElementById(id).textContent = '—'; });
+            }
+        }
+
+        // Carga la lista real de inscritos desde /api/eventos/{id}/inscritos
+        async function cargarInscritos() {
+            try {
+                const resp = await fetch('/api/eventos/' + eventoId + '/inscritos');
+                if (!resp.ok) throw new Error('Error cargando inscritos');
+                const lista = await resp.json();
+                const tbody = document.getElementById('tbody-inscritos');
+
+                if (!lista || lista.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No hay inscritos aún</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = lista.map(function(i) {
+                    var asistencia = i.asistio
+                        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Asistió</span>'
+                        : '<span class="badge bg-secondary">Pendiente</span>';
+                    var horaAsistencia = i.asistio && i.fechaAsistencia
+                        ? i.fechaAsistencia.replace('T', ' ').substring(0, 16)
+                        : '—';
+                    var fechaInscripcion = i.fechaInscripcion
+                        ? i.fechaInscripcion.replace('T', ' ').substring(0, 16)
+                        : '—';
+                    return '<tr>' +
+                        '<td><strong>' + i.nombre + '</strong></td>' +
+                        '<td>' + i.email + '</td>' +
+                        '<td>' + fechaInscripcion + '</td>' +
+                        '<td>' + asistencia + '</td>' +
+                        '<td>' + horaAsistencia + '</td>' +
+                        '</tr>';
+                }).join('');
+
+            } catch (err) {
+                console.error('Error cargando inscritos:', err);
+                document.getElementById('tbody-inscritos').innerHTML =
+                    '<tr><td colspan="5" class="text-center text-danger py-3">Error cargando lista</td></tr>';
             }
         }
 
@@ -182,16 +216,14 @@
             document.getElementById('spinner-inscripciones').style.display = 'none';
             const canvas = document.getElementById('chartInscripciones');
             canvas.style.display = 'block';
-
             if (chartInscripciones) chartInscripciones.destroy();
-
             chartInscripciones = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: datos.map(d => d.fecha),
+                    labels: datos.map(function(d) { return d.fecha; }),
                     datasets: [{
                         label: 'Inscripciones',
-                        data: datos.map(d => d.cantidad),
+                        data: datos.map(function(d) { return d.cantidad; }),
                         backgroundColor: 'rgba(13, 110, 253, 0.7)',
                         borderColor: 'rgba(13, 110, 253, 1)',
                         borderWidth: 1,
@@ -210,16 +242,14 @@
             document.getElementById('spinner-asistencia').style.display = 'none';
             const canvas = document.getElementById('chartAsistencia');
             canvas.style.display = 'block';
-
             if (chartAsistencia) chartAsistencia.destroy();
-
             chartAsistencia = new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: datos.map(d => d.hora),
+                    labels: datos.map(function(d) { return d.hora; }),
                     datasets: [{
                         label: 'Asistentes',
-                        data: datos.map(d => d.cantidad),
+                        data: datos.map(function(d) { return d.cantidad; }),
                         backgroundColor: 'rgba(25, 135, 84, 0.15)',
                         borderColor: 'rgba(25, 135, 84, 1)',
                         borderWidth: 2,
@@ -237,42 +267,48 @@
             });
         }
 
-        function actualizarTablaInscritos(resumen) {
-            // La tabla detallada requeriría un endpoint adicional;
-            // aquí se muestra el resumen disponible desde el endpoint de estadísticas
-            const tbody = document.getElementById('tbody-inscritos');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-3 text-muted">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Total inscritos: <strong>${resumen.totalInscritos}</strong> —
-                        Asistentes confirmados: <strong>${resumen.totalAsistentes}</strong>
-                    </td>
-                </tr>`;
-        }
-
-        // ── Exportar CSV básico ──────────────────────────────────────────────
         function exportarCSV() {
-            const rows = [['Evento ID', 'Total Inscritos', 'Total Asistentes', '% Asistencia']];
-            const ti   = document.getElementById('total-inscritos').textContent;
-            const ta   = document.getElementById('total-asistentes').textContent;
-            const pa   = document.getElementById('porcentaje-asistencia').textContent;
-            rows.push([eventoId, ti, ta, pa]);
-
-            const csv  = rows.map(r => r.join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
+            var headers = ["Nombre", "Email", "Fecha Inscripcion", "Asistio", "Hora Asistencia"];
+            var filas = [headers];
+            document.querySelectorAll('#tbody-inscritos tr').forEach(function(tr) {
+                var celdas = tr.querySelectorAll('td');
+                if (celdas.length >= 5) {
+                    filas.push([
+                        celdas[0].textContent.trim(),
+                        celdas[1].textContent.trim(),
+                        celdas[2].textContent.trim(),
+                        celdas[3].textContent.trim(),
+                        celdas[4].textContent.trim()
+                    ]);
+                }
+            });
+            var csv  = filas.map(function(r) { return r.join(','); }).join('\n');
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var url  = URL.createObjectURL(blob);
+            var a    = document.createElement('a');
             a.href     = url;
-            a.download = `resumen_evento_${eventoId}.csv`;
+            a.download = 'inscritos_evento_' + eventoId + '.csv';
             a.click();
             URL.revokeObjectURL(url);
         }
 
-        // Cargar al iniciar y refrescar cada 30 s
-        document.addEventListener('DOMContentLoaded', cargarEstadisticas);
-        setInterval(cargarEstadisticas, 30000);
-        /*]]>*/
+        function cargarTodo() {
+            cargarEstadisticas();
+            cargarInscritos();
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarTodo);
+
+        // FIX caché: cuando el usuario vuelve a esta página desde el escáner,
+        // el navegador puede mostrar la versión en caché. Esto fuerza recarga de datos.
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                cargarTodo();
+            }
+        });
+
+        // Actualizar cada 30 segundos
+        setInterval(cargarTodo, 30000);
     </script>
 
 </main>

@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout(${editar} ? 'Editar Evento' : 'Nuevo Evento', ~{::main})}">
-    <title>Formulario Evento</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(${editar} ? 'Editar Evento' : 'Nuevo Evento', ~{::main})}">
+<head><title>Formulario Evento</title></head>
 <body>
 <main>
     <div class="row justify-content-center">
@@ -17,55 +16,45 @@
 
             <div class="card shadow">
                 <div class="card-header bg-white py-3">
-                    <h4 class="mb-0"
-                        th:text="${editar} ? 'Editar Evento' : 'Crear Nuevo Evento'">Título</h4>
+                    <h4 class="mb-0" th:text="${editar} ? 'Editar Evento' : 'Crear Nuevo Evento'">Título</h4>
                 </div>
                 <div class="card-body p-4">
 
                     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-                    <!--
-                        Bug corregido: el original tenía dos <form> que se cerraban
-                        antes de los campos, dejando todos los inputs fuera del form.
-                        Solución: un único form con acción dinámica según editar/crear.
-                    -->
-                    <form id="form-evento"
-                          th:action="${editar} ? @{'/organizador/eventos/' + ${evento.id} + '/editar'} : @{/organizador/eventos}"
+                    <!-- ═══════════════════════════════════════
+                         FORMULARIO EDITAR
+                    ════════════════════════════════════════ -->
+                    <form th:if="${editar}"
+                          th:action="@{|/organizador/eventos/${evento.id}/editar|}"
                           method="post"
-                          class="needs-validation"
-                          novalidate>
+                          enctype="multipart/form-data"
+                          class="needs-validation" novalidate>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Título del Evento *</label>
                             <input type="text" name="titulo" class="form-control form-control-lg"
-                                   th:value="${evento != null ? evento.titulo : ''}"
-                                   required minlength="3" maxlength="200"
-                                   placeholder="Ej. Charla sobre Inteligencia Artificial">
+                                   th:value="${evento.titulo}" required minlength="3" maxlength="200">
                             <div class="invalid-feedback">El título debe tener al menos 3 caracteres.</div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Descripción</label>
-                            <textarea name="descripcion" class="form-control" rows="4"
-                                      maxlength="2000"
-                                      placeholder="Describe de qué trata el evento..."
-                                      th:text="${evento != null ? evento.descripcion : ''}"></textarea>
+                            <textarea name="descripcion" class="form-control" rows="4" maxlength="2000"
+                                      th:text="${evento.descripcion}"></textarea>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Fecha y Hora *</label>
                                 <input type="datetime-local" name="fechaHora" class="form-control"
-                                       th:value="${fechaFormateada}"
-                                       required>
+                                       th:value="${fechaFormateada}" required>
                                 <div class="invalid-feedback">Selecciona una fecha y hora futuras.</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Lugar *</label>
                                 <input type="text" name="lugar" class="form-control"
-                                       th:value="${evento != null ? evento.lugar : ''}"
-                                       required maxlength="200"
-                                       placeholder="Ej. Aula Magna, Edificio A">
+                                       th:value="${evento.lugar}" required maxlength="200">
                                 <div class="invalid-feedback">El lugar es obligatorio.</div>
                             </div>
                         </div>
@@ -73,26 +62,117 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold">Cupo Máximo *</label>
                             <input type="number" name="cupoMaximo" class="form-control"
-                                   th:value="${evento != null ? evento.cupoMaximo : 50}"
-                                   min="1" max="10000" required>
-                            <div class="form-text text-muted">Número máximo de participantes.</div>
+                                   th:value="${evento.cupoMaximo}" min="1" max="10000" required>
                             <div class="invalid-feedback">El cupo mínimo es 1.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Imagen del Evento</label>
+                            <div th:if="${evento.imagenUrl != null}" class="mb-2">
+                                <img th:src="${evento.imagenUrl}" alt="Imagen actual"
+                                     class="img-thumbnail d-block" style="max-height:140px;">
+                                <div class="form-text">Imagen actual. Sube una nueva para reemplazarla.</div>
+                            </div>
+                            <input type="file" name="imagen" class="form-control"
+                                   accept="image/jpeg,image/png,image/gif,image/webp"
+                                   onchange="previewImg(this, 'preview-editar')">
+                            <div class="form-text">JPG, PNG, GIF, WEBP. Opcional.</div>
+                            <!-- ID único para editar -->
+                            <img id="preview-editar" src="" alt="Vista previa"
+                                 class="img-thumbnail mt-2 d-none" style="max-height:140px;">
                         </div>
 
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-lg me-2"></i>
-                                <span th:text="${editar} ? 'Guardar Cambios' : 'Crear Evento'">Guardar</span>
+                                <i class="bi bi-check-lg me-2"></i>Guardar Cambios
                             </button>
-                            <a href="/organizador/dashboard"
-                               class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                            <a href="/organizador/dashboard" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                        </div>
+                    </form>
+
+                    <!-- ═══════════════════════════════════════
+                         FORMULARIO CREAR
+                    ════════════════════════════════════════ -->
+                    <form th:unless="${editar}"
+                          action="/organizador/eventos"
+                          method="post"
+                          enctype="multipart/form-data"
+                          class="needs-validation" novalidate>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Título del Evento *</label>
+                            <input type="text" name="titulo" class="form-control form-control-lg"
+                                   required minlength="3" maxlength="200"
+                                   placeholder="Ej. Charla sobre Inteligencia Artificial">
+                            <div class="invalid-feedback">El título debe tener al menos 3 caracteres.</div>
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descripción</label>
+                            <textarea name="descripcion" class="form-control" rows="4" maxlength="2000"
+                                      placeholder="Describe de qué trata el evento..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Fecha y Hora *</label>
+                                <input type="datetime-local" name="fechaHora" class="form-control" required>
+                                <div class="invalid-feedback">Selecciona una fecha y hora futuras.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Lugar *</label>
+                                <input type="text" name="lugar" class="form-control"
+                                       required maxlength="200" placeholder="Ej. Aula Magna">
+                                <div class="invalid-feedback">El lugar es obligatorio.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Cupo Máximo *</label>
+                            <input type="number" name="cupoMaximo" class="form-control"
+                                   value="50" min="1" max="10000" required>
+                            <div class="invalid-feedback">El cupo mínimo es 1.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Imagen del Evento</label>
+                            <input type="file" name="imagen" class="form-control"
+                                   accept="image/jpeg,image/png,image/gif,image/webp"
+                                   onchange="previewImg(this, 'preview-nuevo')">
+                            <div class="form-text">JPG, PNG, GIF, WEBP. Opcional.</div>
+                            <!-- ID único para crear -->
+                            <img id="preview-nuevo" src="" alt="Vista previa"
+                                 class="img-thumbnail mt-2 d-none" style="max-height:140px;">
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-lg me-2"></i>Crear Evento
+                            </button>
+                            <a href="/organizador/dashboard" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                        </div>
                     </form>
+
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        function previewImg(input, targetId) {
+            var img = document.getElementById(targetId);
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                    img.classList.remove('d-none');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                img.classList.add('d-none');
+            }
+        }
+    </script>
 </main>
 </body>
 </html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Mis Inscripciones', ~{::main})}">
+    <title>Mis Inscripciones</title>
+</head>
+<body>
+<main>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-ticket-perforated me-2"></i>Mis Inscripciones</h2>
+            <p class="text-muted mb-0">Eventos en los que estás registrado</p>
+        </div>
+        <a href="/participante/perfil" class="btn btn-outline-secondary">
+            <i class="bi bi-person-gear me-2"></i>Mi Perfil
+        </a>
+    </div>
+
+    <div th:if="${exito}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${exito}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Tabs activas / canceladas -->
+    <ul class="nav nav-tabs mb-4" id="tabInscripciones">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#activas">
+                <i class="bi bi-check-circle me-1 text-success"></i>Activas
+                <span class="badge bg-success ms-1" th:text="${totalActivas}">0</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#canceladas">
+                <i class="bi bi-x-circle me-1 text-secondary"></i>Canceladas
+                <span class="badge bg-secondary ms-1" th:text="${totalCanceladas}">0</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- INSCRIPCIONES ACTIVAS -->
+        <div class="tab-pane fade show active" id="activas">
+            <div class="row g-4" th:if="${not #lists.isEmpty(inscripcionesActivas)}">
+                <div class="col-md-6" th:each="ins : ${inscripcionesActivas}">
+                    <div class="card shadow-sm h-100 border-0">
+                        <div class="card-header d-flex justify-content-between align-items-center"
+                             th:classappend="${ins.asistio} ? 'bg-success text-white' : 'bg-primary text-white'">
+                            <small>
+                                <i class="bi bi-calendar me-1"></i>
+                                <span th:text="${#temporals.format(ins.evento.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span>
+                            </small>
+                            <span th:if="${ins.asistio}" class="badge bg-white text-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>Asistió
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${ins.evento.titulo}">Título</h5>
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-geo-alt me-1"></i><span th:text="${ins.evento.lugar}">Lugar</span>
+                            </p>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-clock me-1"></i>Inscrito el
+                                <span th:text="${#temporals.format(ins.fechaInscripcion, 'dd/MM/yyyy')}">fecha</span>
+                            </p>
+
+                            <!-- Mini QR y token -->
+                            <div class="text-center mb-3">
+                                <div th:id="'qr-' + ${ins.id}"
+                                     th:data-token="${ins.tokenQR}"
+                                     class="d-inline-block"></div>
+                                <small class="d-block text-muted mt-1">
+                                    Token: <code th:text="${#strings.abbreviate(ins.tokenQR, 12)}">...</code>
+                                </small>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a th:href="@{'/eventos/' + ${ins.evento.id}}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                    <i class="bi bi-info-circle me-1"></i>Ver evento
+                                </a>
+                                <button th:if="${ins.evento.estaActivo()}"
+                                        th:data-id="${ins.id}"
+                                        onclick="cancelar(this)"
+                                        class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-x"></i> Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(inscripcionesActivas)}" class="text-center py-5 text-muted">
+                <i class="bi bi-ticket-perforated display-1 d-block mb-3"></i>
+                <h5>No tienes inscripciones activas</h5>
+                <a href="/eventos" class="btn btn-primary mt-2">Ver eventos disponibles</a>
+            </div>
+        </div>
+
+        <!-- INSCRIPCIONES CANCELADAS -->
+        <div class="tab-pane fade" id="canceladas">
+            <div class="list-group" th:if="${not #lists.isEmpty(inscripcionesCanceladas)}">
+                <div class="list-group-item" th:each="ins : ${inscripcionesCanceladas}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 text-muted" th:text="${ins.evento.titulo}">Título</h6>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar me-1"></i>
+                                <span th:text="${#temporals.format(ins.evento.fechaHora, 'dd/MM/yyyy')}">Fecha</span>
+                            </small>
+                        </div>
+                        <span class="badge bg-secondary">Cancelada</span>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(inscripcionesCanceladas)}" class="text-center py-5 text-muted">
+                <i class="bi bi-check-circle display-1 d-block mb-3"></i>
+                <h5>No tienes inscripciones canceladas</h5>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        // Generar QR pequeño para cada inscripción activa
+        document.querySelectorAll('[data-token]').forEach(function(div) {
+            var token = div.getAttribute('data-token');
+            if (token) {
+                new QRCode(div, {
+                    text: token,
+                    width: 80,
+                    height: 80,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        });
+
+        function cancelar(btn) {
+            if (!confirm('¿Cancelar esta inscripción?')) return;
+            var id = btn.getAttribute('data-id');
+            fetch('/api/inscripciones/' + id + '/cancelar', { method: 'POST' })
+                .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+                .then(function(res) {
+                    if (res.ok) {
+                        location.reload();
+                    } else {
+                        alert(res.data.error || 'Error al cancelar');
+                    }
+                });
+        }
+    </script>
+</main>
+</body>
+</html>

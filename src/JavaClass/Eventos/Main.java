@@ -4,6 +4,7 @@ import Controlador.AdminControlador;
 import Controlador.ApiControlador;
 import Controlador.AutorizacionControlador;
 import Controlador.EventoControlador;
+import Controlador.ParticipanteControlador;
 import Eventos.Configuracion.BaseDeDatosConfiguracion;
 import Eventos.Configuracion.JavalinConfiguracion;
 import Servicio.EstadisticaServicio;
@@ -18,8 +19,8 @@ public class Main
     {
         BaseDeDatosConfiguracion.getSessionFactory();
 
-        UsuarioServicio usuarioServicio = new UsuarioServicio();
-        EventoServicio eventoServicio = new EventoServicio();
+        UsuarioServicio usuarioServicio         = new UsuarioServicio();
+        EventoServicio eventoServicio           = new EventoServicio();
         InscripcionServicio inscripcionServicio = new InscripcionServicio();
         EstadisticaServicio estadisticaServicio = new EstadisticaServicio();
 
@@ -28,10 +29,11 @@ public class Main
         Javalin app = JavalinConfiguracion.crearAplicacion();
 
         new AutorizacionControlador(usuarioServicio).registrarRutas(app);
-        new EventoControlador(eventoServicio,inscripcionServicio).registrarRutas(app);
-        new AdminControlador( eventoServicio, usuarioServicio).registrarRutas(app);
+        new EventoControlador(eventoServicio, inscripcionServicio).registrarRutas(app);
+        new AdminControlador(eventoServicio, usuarioServicio).registrarRutas(app);
+        new ParticipanteControlador(usuarioServicio, inscripcionServicio).registrarRutas(app);
 
-        ApiControlador apiControlador=new ApiControlador(inscripcionServicio, eventoServicio, estadisticaServicio );
+        ApiControlador apiControlador = new ApiControlador(inscripcionServicio, eventoServicio, estadisticaServicio);
         apiControlador.registrarRutas(app);
 
         app.get("/health", ctx -> ctx.json(new Object() {
@@ -39,13 +41,12 @@ public class Main
             public final String version = "1.0.0";
         }));
 
-        int puerto = Integer.parseInt(System.getenv(). getOrDefault("PORT", "7000"));
+        int puerto = Integer.parseInt(System.getenv().getOrDefault("PORT", "7000"));
         app.start(puerto);
 
         Runtime.getRuntime().addShutdownHook(new Thread(BaseDeDatosConfiguracion::shutdown));
 
         System.out.println("Servidor iniciado en puerto: " + puerto);
         System.out.println("URL: http://localhost:" + puerto);
-
     }
 }

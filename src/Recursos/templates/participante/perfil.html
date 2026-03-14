@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Mi Perfil', ~{::main})}">
+    <title>Mi Perfil</title>
+</head>
+<body>
+<main>
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-person-circle me-2"></i>Mi Perfil</h2>
+                <a href="/participante/mis-inscripciones" class="btn btn-outline-secondary">
+                    <i class="bi bi-ticket-perforated me-1"></i>Mis Inscripciones
+                </a>
+            </div>
+
+            <div th:if="${exito}" class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle me-2"></i><span th:text="${exito}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+                <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Datos personales -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-person me-2 text-primary"></i>Datos Personales
+                </div>
+                <div class="card-body p-4">
+                    <form action="/participante/perfil" method="post">
+                        <input type="hidden" name="seccion" value="datos">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre Completo</label>
+                            <input type="text" name="nombre" class="form-control"
+                                   th:value="${session.usuario.nombre}"
+                                   required minlength="3" maxlength="100">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   th:value="${session.usuario.email}"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Usuario</label>
+                            <input type="text" class="form-control"
+                                   th:value="${session.usuario.username}"
+                                   disabled>
+                            <div class="form-text">El nombre de usuario no se puede cambiar.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Guardar Cambios
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cambiar contraseña -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-lock me-2 text-warning"></i>Cambiar Contraseña
+                </div>
+                <div class="card-body p-4">
+                    <form action="/participante/perfil" method="post" id="form-password"
+                          onsubmit="return validarPassword()">
+                        <input type="hidden" name="seccion" value="password">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Contraseña Actual</label>
+                            <input type="password" name="passwordActual" id="passwordActual"
+                                   class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nueva Contraseña</label>
+                            <input type="password" name="passwordNueva" id="passwordNueva"
+                                   class="form-control" required minlength="6">
+                            <div class="form-text">Mínimo 6 caracteres.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Confirmar Nueva Contraseña</label>
+                            <input type="password" id="passwordConfirmar"
+                                   class="form-control" required>
+                            <div class="invalid-feedback" id="feedback-pass">Las contraseñas no coinciden.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-shield-lock me-2"></i>Cambiar Contraseña
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function validarPassword() {
+            var nueva    = document.getElementById('passwordNueva').value;
+            var confirmar = document.getElementById('passwordConfirmar');
+            if (nueva !== confirmar.value) {
+                confirmar.classList.add('is-invalid');
+                document.getElementById('feedback-pass').style.display = 'block';
+                return false;
+            }
+            confirmar.classList.remove('is-invalid');
+            return true;
+        }
+        document.getElementById('passwordConfirmar').addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    </script>
+</main>
+</body>
+</html>

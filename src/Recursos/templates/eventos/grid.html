@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout('Eventos - Vista Tarjetas', ~{::main})}">
-    <title>Eventos</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Eventos - Vista Tarjetas', ~{::main})}">
+<head><title>Eventos</title></head>
 <body>
 <main>
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -15,47 +14,74 @@
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         <div class="col" th:each="evento : ${eventos}">
-            <div class="card h-100 shadow-sm hover-card">
-                <div class="card-header bg-primary text-white">
-                    <small><i class="bi bi-calendar me-1"></i>
-                        <span th:text="${#temporals.format(evento.fechaHora, 'EEEE, dd MMMM yyyy')}">Fecha</span></small>
+            <div class="card h-100 shadow-sm border-0 hover-card">
+                <div class="position-relative">
+                    <img th:if="${evento.imagenUrl != null}"
+                         th:src="${evento.imagenUrl}" th:alt="${evento.titulo}"
+                         class="card-img-top" style="height:180px; object-fit:cover;">
+                    <div th:unless="${evento.imagenUrl != null}"
+                         class="card-img-top d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
+                         style="height:180px;">
+                        <i class="bi bi-calendar-event" style="font-size:3.5rem; color:#0d6efd; opacity:0.4;"></i>
+                    </div>
+                    <span th:if="${evento.tieneCuposDisponibles()}"
+                          class="badge bg-success position-absolute top-0 end-0 m-2">
+                        <i class="bi bi-check-circle me-1"></i>Disponible</span>
+                    <span th:unless="${evento.tieneCuposDisponibles()}"
+                          class="badge bg-danger position-absolute top-0 end-0 m-2">
+                        <i class="bi bi-x-circle me-1"></i>Agotado</span>
+                    <div class="position-absolute bottom-0 start-0 m-2">
+                        <span class="badge bg-dark bg-opacity-75 px-2 py-1">
+                            <i class="bi bi-calendar me-1"></i>
+                            <span th:text="${#temporals.format(evento.fechaHora, 'dd MMM yyyy')}">Fecha</span>
+                        </span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <h5 class="card-title text-truncate" th:text="${evento.titulo}">Título</h5>
-                    <p class="card-text text-muted" th:text="${#strings.abbreviate(evento.descripcion, 100)}">Desc</p>
 
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title fw-bold text-truncate" th:text="${evento.titulo}">Título</h5>
+                    <p class="card-text text-muted small flex-grow-1"
+                       th:text="${#strings.abbreviate(evento.descripcion, 90)}">Desc</p>
                     <ul class="list-unstyled small text-muted mb-3">
-                        <li><i class="bi bi-clock me-2"></i>
-                            <span th:text="${#temporals.format(evento.fechaHora, 'HH:mm')}">Hora</span></li>
-                        <li><i class="bi bi-geo-alt me-2"></i><span th:text="${evento.lugar}">Lugar</span></li>
-                        <li><i class="bi bi-people me-2"></i>
-                            <span th:text="${evento.cuposDisponibles}">0</span> cupos disponibles</li>
+                        <li class="mb-1"><i class="bi bi-clock me-2 text-primary"></i>
+                            <span th:text="${#temporals.format(evento.fechaHora, 'HH:mm')} + ' hrs'">Hora</span></li>
+                        <li class="mb-1"><i class="bi bi-geo-alt me-2 text-danger"></i>
+                            <span th:text="${evento.lugar}">Lugar</span></li>
+                        <li><i class="bi bi-people me-2 text-info"></i>
+                            <span th:text="${evento.cuposDisponibles}">0</span> de
+                            <span th:text="${evento.cupoMaximo}">0</span> cupos</li>
                     </ul>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Ocupación</span>
+                            <span th:text="${evento.cupoMaximo - evento.cuposDisponibles} + '/' + ${evento.cupoMaximo}">0/0</span>
+                        </div>
+                        <div class="progress" style="height:5px;">
+                            <div class="progress-bar"
+                                 th:classappend="${evento.tieneCuposDisponibles()} ? 'bg-success' : 'bg-danger'"
+                                 th:style="'width:' + ${(evento.cupoMaximo - evento.cuposDisponibles) * 100.0 / evento.cupoMaximo} + '%'">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-footer bg-white border-top-0">
-                    <a th:href="@{'/eventos/' + ${evento.id}}" class="btn btn-outline-primary w-100">
+                <div class="card-footer bg-white border-top-0 pb-3 px-3">
+                    <a th:href="@{'/eventos/' + ${evento.id}}" class="btn btn-primary w-100">
                         Ver Detalles <i class="bi bi-arrow-right ms-1"></i>
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Sin eventos -->
         <div th:if="${#lists.isEmpty(eventos)}" class="col-12 text-center py-5">
             <i class="bi bi-calendar-x display-1 text-muted"></i>
             <h4 class="mt-3 text-muted">No hay eventos disponibles</h4>
         </div>
     </div>
-</main>
 
-<style>
-    .hover-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .hover-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
-</style>
+    <style>
+        .hover-card { transition: transform 0.2s, box-shadow 0.2s; border-radius:12px !important; overflow:hidden; }
+        .hover-card:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important; }
+    </style>
+</main>
 </body>
 </html>

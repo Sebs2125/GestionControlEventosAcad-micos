@@ -20,36 +20,17 @@ public class JavalinConfiguracion
         resolver.setCharacterEncoding("UTF-8");
         templateEngine.addTemplateResolver(resolver);
 
-        return Javalin.create( configuracion -> {
+        return Javalin.create(configuracion -> {
             configuracion.staticFiles.add("/public");
             configuracion.fileRenderer(new JavalinThymeleaf(templateEngine));
+
+            configuracion.http.maxRequestSize = 10 * 1024 * 1024L;
+
             configuracion.jetty.sessionHandler(() -> {
                 SessionHandler handler = new SessionHandler();
                 handler.getSessionCookieConfig().setHttpOnly(true);
                 handler.getSessionCookieConfig().setName("JSESSIONID");
                 handler.getSessionCookieConfig().setPath("/");
-                handler.setMaxInactiveInterval(1800);
-                return handler;
-            });
-        });
-    }
-
-    public static Javalin crearAplicacionSimple()
-    {
-        TemplateEngine templateEngine = new TemplateEngine();
-        ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
-        resolver.setTemplateMode(TemplateMode.HTML);
-        resolver.setPrefix("/templates/");
-        resolver.setSuffix(".html");
-        resolver.setCacheable(false);
-        resolver.setCharacterEncoding("UTF-8");
-        templateEngine.addTemplateResolver(resolver);
-
-        return Javalin.create( configuracion -> {
-            configuracion.staticFiles.add("/public");
-            configuracion.fileRenderer(new JavalinThymeleaf(templateEngine));
-            configuracion.jetty.sessionHandler(() -> {
-                SessionHandler handler = new SessionHandler();
                 handler.setMaxInactiveInterval(1800);
                 return handler;
             });

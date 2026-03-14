@@ -7,41 +7,41 @@ import Servicio.InscripcionServicio;
 import Servicio.EventoServicio;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.UploadedFile;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class EventoControlador
 {
     private final EventoServicio eventoServicio;
-    private InscripcionServicio inscripcionServicio;
+    private final InscripcionServicio inscripcionServicio;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
-    // Formatter para mostrar fecha en el formulario de edición
-    private final DateTimeFormatter formatterDisplay = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    // Usar directorio del sistema del usuario — siempre existe y tiene permisos
+    private static final String UPLOAD_DIR = System.getProperty("user.home") + File.separator + "evento_uploads";
 
-    // FIX: parser flexible que acepta tanto "yyyy-MM-ddTHH:mm" (sin segundos, del input HTML)
-    // como "yyyy-MM-ddTHH:mm:ss" (con segundos). Sin esto, al editar sin tocar la fecha
-    // el parseo fallaba porque el datetime-local del navegador no incluye segundos.
-    private final DateTimeFormatter formatterParse = new DateTimeFormatterBuilder()
-            .appendPattern("yyyy-MM-dd'T'HH:mm")
-            .optionalStart()
-            .appendPattern(":ss")
-            .optionalEnd()
-            .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-            .toFormatter();
-
-    public EventoControlador( EventoServicio eventoServicio, InscripcionServicio inscripcionServicio )
-    {
-        this.eventoServicio = eventoServicio;
+    public EventoControlador(EventoServicio eventoServicio, InscripcionServicio inscripcionServicio) {
+        this.eventoServicio      = eventoServicio;
         this.inscripcionServicio = inscripcionServicio;
+        // Crear carpeta si no existe
+        File dir = new File(UPLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+            System.out.println("Carpeta de imágenes creada en: " + dir.getAbsolutePath());
+        }
     }
 
-    public void registrarRutas(Javalin app)
-    {
+    public void registrarRutas(Javalin app) {
         app.get("/", ctx -> ctx.redirect("/eventos"));
         app.get("/eventos", this::listarLista);
         app.get("/eventos/grid", this::listarGrid);
@@ -57,51 +57,123 @@ public class EventoControlador
         app.post("/organizador/eventos/{id}/cancelar", this::cancelar);
         app.get("/organizador/eventos/{id}/resumen", this::verResumen);
         app.get("/organizador/eventos/{id}/escaner", this::verEscaner);
-        app.get("/invitacion", this::verInvitacion);
+
+        // Ruta para servir imágenes — lee del directorio del sistema
+        app.get("/uploads/{filename}", this::servirImagen);
     }
 
-    private void listarLista(Context ctx)
-    {
+    private void servirImagen(Context ctx) {
+        // Sanitizar para evitar path traversal
+        String filename = Paths.get(ctx.pathParam("filename")).getFileName().toString();
+        File file = new File(UPLOAD_DIR, filename);
+
+        if (!file.exists() || !file.isFile()) {
+            ctx.status(404);
+            return;
+        }
+        try {
+            String contentType = Files.probeContentType(file.toPath());
+            if (contentType == null) contentType = "image/jpeg";
+            ctx.contentType(contentType);
+            ctx.result(new FileInputStream(file));
+        } catch (Exception e) {
+            ctx.status(500);
+        }
+    }
+
+    private String guardarImagen(Context ctx) {
+        try {
+            UploadedFile archivo = ctx.uploadedFile("imagen");
+
+            // Verificar que se subió algo
+            if (archivo == null) {
+                System.out.println("No se recibió archivo imagen");
+                return null;
+            }
+
+            String originalName = archivo.filename();
+            System.out.println("Archivo recibido: " + originalName + " | Content-Type: " + archivo.contentType());
+
+            // Verificar que tiene nombre (no está vacío)
+            if (originalName == null || originalName.trim().isEmpty()) {
+                System.out.println("Nombre de archivo vacío");
+                return null;
+            }
+
+            // Extensión
+            String extension = "";
+            int dot = originalName.lastIndexOf('.');
+            if (dot >= 0) extension = originalName.substring(dot).toLowerCase();
+
+            // Validar tipo
+            if (!extension.matches("\\.(jpg|jpeg|png|gif|webp)")) {
+                System.out.println("Extensión no permitida: " + extension);
+                return null;
+            }
+
+            String nuevoNombre = UUID.randomUUID().toString() + extension;
+            File destino = new File(UPLOAD_DIR, nuevoNombre);
+
+            // Leer y escribir el archivo
+            try (InputStream in = archivo.content();
+                 FileOutputStream out = new FileOutputStream(destino)) {
+
+                byte[] buf = new byte[4096];
+                int bytesLeidos;
+                long totalBytes = 0;
+                while ((bytesLeidos = in.read(buf)) != -1) {
+                    out.write(buf, 0, bytesLeidos);
+                    totalBytes += bytesLeidos;
+                }
+                System.out.println("Imagen guardada: " + destino.getAbsolutePath() + " (" + totalBytes + " bytes)");
+
+                if (totalBytes == 0) {
+                    destino.delete();
+                    System.out.println("Archivo vacío, eliminado");
+                    return null;
+                }
+            }
+
+            return "/uploads/" + nuevoNombre;
+
+        } catch (Exception e) {
+            System.err.println("Error guardando imagen: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void listarLista(Context ctx) {
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("eventos", eventoServicio.listarPublicados());
-        modelo.put("vista", "lista");
         ctx.render("/eventos/lista.html", modelo);
     }
 
-    private void listarGrid(Context ctx)
-    {
+    private void listarGrid(Context ctx) {
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("eventos", eventoServicio.listarPublicados());
-        modelo.put("vista", "grid");
         ctx.render("/eventos/grid.html", modelo);
     }
 
-    private void detalle(Context ctx)
-    {
+    private void detalle(Context ctx) {
         Long id = Long.parseLong(ctx.pathParam("id"));
         Evento evento = eventoServicio.buscarPorId(id);
-
-        if (evento == null || evento.getEstado() != Evento.Estado.PUBLICADO)
-        {
+        if (evento == null || evento.getEstado() != Evento.Estado.PUBLICADO) {
             ctx.status(404).result("Evento no encontrado");
             return;
         }
-
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
-
         Usuario usuario = ctx.sessionAttribute("usuario");
-        if (usuario != null && usuario.getRol() == Usuario.Rol.PARTICIPANTE)
-        {
-            InscripcionUsuario inscripcion = InscripcionServicio.buscarPorEventoYParticipantePublico(id, usuario.getId());
+        if (usuario != null && usuario.getRol() == Usuario.Rol.PARTICIPANTE) {
+            InscripcionUsuario inscripcion =
+                    InscripcionServicio.buscarPorEventoYParticipantePublico(id, usuario.getId());
             modelo.put("inscripcion", inscripcion);
         }
-
         ctx.render("/eventos/detalle.html", modelo);
     }
 
-    private void dashboard(Context ctx)
-    {
+    private void dashboard(Context ctx) {
         Usuario u = ctx.sessionAttribute("usuario");
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("eventos", eventoServicio.listarPorOrganizador(u.getId()));
@@ -110,29 +182,27 @@ public class EventoControlador
         ctx.render("/organizador/dashboard.html", modelo);
     }
 
-    private void formularioNuevo(Context ctx)
-    {
+    private void formularioNuevo(Context ctx) {
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("editar", false);
         ctx.render("/eventos/formulario.html", modelo);
     }
 
-    private void crear(Context ctx)
-    {
-        try
-        {
+    private void crear(Context ctx) {
+        try {
             Usuario organizador = ctx.sessionAttribute("usuario");
+            String imagenUrl = guardarImagen(ctx);
             eventoServicio.crear(
                     ctx.formParam("titulo"),
                     ctx.formParam("descripcion"),
-                    LocalDateTime.parse(ctx.formParam("fechaHora"), formatterParse),
+                    LocalDateTime.parse(ctx.formParam("fechaHora")),
                     ctx.formParam("lugar"),
                     Integer.parseInt(ctx.formParam("cupoMaximo")),
-                    organizador
+                    organizador,
+                    imagenUrl
             );
             ctx.redirect("/organizador/dashboard?exito=Evento creado correctamente");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             Map<String, Object> modelo = baseModelo(ctx);
             modelo.put("error", e.getMessage());
             modelo.put("editar", false);
@@ -140,156 +210,100 @@ public class EventoControlador
         }
     }
 
-    private void formularioEditar(Context ctx)
-    {
+    private void formularioEditar(Context ctx) {
         Long id = Long.parseLong(ctx.pathParam("id"));
         Evento evento = eventoServicio.buscarPorId(id);
         Usuario u = ctx.sessionAttribute("usuario");
-
-        if (evento == null || !u.puedeGestionarEvento(evento))
-        {
+        if (evento == null || !u.puedeGestionarEvento(evento)) {
             ctx.status(403).result("No autorizado");
             return;
         }
-
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
         modelo.put("editar", true);
-        // Formatear para que el input datetime-local lo muestre correctamente
-        modelo.put("fechaFormateada", evento.getFechaHora().format(formatterDisplay));
+        // Formato compatible con datetime-local input
+        modelo.put("fechaFormateada", evento.getFechaHora().format(formatter));
         ctx.render("/eventos/formulario.html", modelo);
     }
 
-    private void editar(Context ctx)
-    {
-        try
-        {
+    private void editar(Context ctx) {
+        try {
             Long id = Long.parseLong(ctx.pathParam("id"));
             Usuario u = ctx.sessionAttribute("usuario");
+            String imagenUrl = guardarImagen(ctx);
             eventoServicio.editar(
                     id,
                     ctx.formParam("titulo"),
                     ctx.formParam("descripcion"),
-                    LocalDateTime.parse(ctx.formParam("fechaHora"), formatterParse),
+                    LocalDateTime.parse(ctx.formParam("fechaHora")),
                     ctx.formParam("lugar"),
                     Integer.parseInt(ctx.formParam("cupoMaximo")),
-                    u
+                    u,
+                    imagenUrl
             );
             ctx.redirect("/organizador/dashboard?exito=Evento actualizado");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             ctx.redirect("/organizador/eventos/" + ctx.pathParam("id") + "/editar?error=" + e.getMessage());
         }
     }
 
-    private void publicar(Context ctx)
-    {
-        try
-        {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            Usuario u = ctx.sessionAttribute("usuario");
-            eventoServicio.publicar(id, u);
+    private void publicar(Context ctx) {
+        try {
+            eventoServicio.publicar(Long.parseLong(ctx.pathParam("id")), ctx.sessionAttribute("usuario"));
             ctx.redirect("/organizador/dashboard?exito=Evento publicado");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             ctx.redirect("/organizador/dashboard?error=" + e.getMessage());
         }
     }
 
-    private void despublicar(Context ctx)
-    {
-        try
-        {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            Usuario u = ctx.sessionAttribute("usuario");
-            eventoServicio.despublicar(id, u);
+    private void despublicar(Context ctx) {
+        try {
+            eventoServicio.despublicar(Long.parseLong(ctx.pathParam("id")), ctx.sessionAttribute("usuario"));
             ctx.redirect("/organizador/dashboard?exito=Evento despublicado");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             ctx.redirect("/organizador/dashboard?error=" + e.getMessage());
         }
     }
 
-    private void cancelar(Context ctx)
-    {
-        try
-        {
-            Long id = Long.parseLong(ctx.pathParam("id"));
-            Usuario u = ctx.sessionAttribute("usuario");
-            eventoServicio.cancelar(id, u);
+    private void cancelar(Context ctx) {
+        try {
+            eventoServicio.cancelar(Long.parseLong(ctx.pathParam("id")), ctx.sessionAttribute("usuario"));
             ctx.redirect("/organizador/dashboard?exito=Evento cancelado");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             ctx.redirect("/organizador/dashboard?error=" + e.getMessage());
         }
     }
 
-    private void verResumen(Context ctx)
-    {
+    private void verResumen(Context ctx) {
         Long id = Long.parseLong(ctx.pathParam("id"));
         Evento evento = eventoServicio.buscarPorId(id);
         Usuario usuario = ctx.sessionAttribute("usuario");
-
-        if (evento == null || !usuario.puedeGestionarEvento(evento))
-        {
+        if (evento == null || !usuario.puedeGestionarEvento(evento)) {
             ctx.status(403).result("No autorizado");
             return;
         }
-
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
         ctx.render("/eventos/resumen.html", modelo);
     }
 
-    private void verEscaner(Context ctx)
-    {
+    private void verEscaner(Context ctx) {
         Long id = Long.parseLong(ctx.pathParam("id"));
         Evento evento = eventoServicio.buscarPorId(id);
         Usuario usuario = ctx.sessionAttribute("usuario");
-
-        if (evento == null || !usuario.puedeGestionarEvento(evento))
-        {
+        if (evento == null || !usuario.puedeGestionarEvento(evento)) {
             ctx.status(403).result("No autorizado");
             return;
         }
-
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
         ctx.render("/organizador/escaner.html", modelo);
     }
 
-    private Map<String, Object> baseModelo(Context ctx)
-    {
+    private Map<String, Object> baseModelo(Context ctx) {
         Map<String, Object> modelo = new HashMap<>();
         modelo.put("usuario", ctx.sessionAttribute("usuario"));
         modelo.put("rol", ctx.sessionAttribute("rol"));
         return modelo;
     }
-
-    private void verInvitacion(Context ctx)
-    {
-        String token = ctx.queryParam("token");
-
-        if (token == null || token.isBlank())
-        {
-            ctx.status(400).result("Token inválido");
-            return;
-        }
-
-        // Buscar la inscripción por token QR
-        InscripcionUsuario inscripcion = inscripcionServicio.buscarPorTokenQR(token);
-
-        if (inscripcion == null)
-        {
-            ctx.status(404).render("/invitacion-invalida.html", new java.util.HashMap<>());
-            return;
-        }
-
-        Map<String, Object> modelo = new HashMap<>();
-        modelo.put("inscripcion", inscripcion);
-        modelo.put("evento",      inscripcion.getEvento());
-        modelo.put("participante", inscripcion.getParticipante());
-        ctx.render("/invitacion.html", modelo);
-    }
-
 }

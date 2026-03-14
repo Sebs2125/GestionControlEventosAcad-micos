@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout('Dashboard Organizador', ~{::main})}">
-    <title>Dashboard Organizador</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Dashboard Organizador', ~{::main})}">
+<head><title>Dashboard Organizador</title></head>
 <body>
 <main>
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -39,7 +38,6 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <!-- FIX: th:each en el <tr>, th:class usando .name() -->
                     <tr th:each="evento : ${eventos}"
                         th:class="${evento.estado.name() == 'CANCELADO'} ? 'table-secondary'">
                         <td>
@@ -71,34 +69,39 @@
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
                                 <form th:if="${evento.estado.name() == 'BORRADOR'}"
-                                      th:action="@{'/organizador/eventos/' + ${evento.id} + '/publicar'}"
+                                      th:action="@{|/organizador/eventos/${evento.id}/publicar|}"
                                       method="post" class="d-inline">
                                     <button type="submit" class="btn btn-outline-success" title="Publicar">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </form>
                                 <form th:if="${evento.estado.name() == 'PUBLICADO'}"
-                                      th:action="@{'/organizador/eventos/' + ${evento.id} + '/despublicar'}"
+                                      th:action="@{|/organizador/eventos/${evento.id}/despublicar|}"
                                       method="post" class="d-inline">
                                     <button type="submit" class="btn btn-outline-warning" title="Despublicar">
                                         <i class="bi bi-eye-slash"></i>
                                     </button>
                                 </form>
-                                <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/editar'}"
+                                <a th:href="@{|/organizador/eventos/${evento.id}/editar|}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form th:if="${evento.estado.name() != 'CANCELADO'}"
-                                      th:action="@{'/organizador/eventos/' + ${evento.id} + '/cancelar'}"
+                                      th:action="@{|/organizador/eventos/${evento.id}/cancelar|}"
                                       method="post" class="d-inline"
                                       onsubmit="return confirm('Cancelar este evento?');">
                                     <button type="submit" class="btn btn-outline-danger" title="Cancelar">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </form>
-                                <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/resumen'}"
-                                   class="btn btn-outline-info" title="Resumen">
+                                <a th:href="@{|/organizador/eventos/${evento.id}/resumen|}"
+                                   class="btn btn-outline-info" title="Ver Resumen">
                                     <i class="bi bi-bar-chart"></i>
+                                </a>
+                                <a th:if="${evento.estado.name() == 'PUBLICADO'}"
+                                   th:href="@{|/organizador/eventos/${evento.id}/escaner|}"
+                                   class="btn btn-outline-dark" title="Escanear QR">
+                                    <i class="bi bi-qr-code-scan"></i>
                                 </a>
                             </div>
                         </td>

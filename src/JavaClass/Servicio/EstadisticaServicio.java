@@ -25,15 +25,36 @@ public class EstadisticaServicio
                 throw new IllegalArgumentException("Evento no encontrado");
             }
 
+            // Calcular totales directamente con SQL para evitar LazyInitializationException
+            Long totalInscritos = (Long) session.createQuery(
+                            "SELECT COUNT(i) FROM InscripcionUsuario i " +
+                                    "WHERE i.evento.id = :eventoId AND i.estado = 'ACTIVA'")
+                    .setParameter("eventoId", eventoId)
+                    .uniqueResult();
+
+            Long totalAsistentes = (Long) session.createQuery(
+                            "SELECT COUNT(i) FROM InscripcionUsuario i " +
+                                    "WHERE i.evento.id = :eventoId AND i.estado = 'ACTIVA' AND i.asistio = true")
+                    .setParameter("eventoId", eventoId)
+                    .uniqueResult();
+
+            if (totalInscritos == null) totalInscritos = 0L;
+            if (totalAsistentes == null) totalAsistentes = 0L;
+
+            int cuposDisponibles = evento.getCupoMaximo() - totalInscritos.intValue();
+            double porcentajeAsistencia = totalInscritos > 0
+                    ? Math.round((totalAsistentes * 100.0 / totalInscritos) * 100.0) / 100.0
+                    : 0.0;
+
             Map<String, Object> resumen = new HashMap<>();
-            resumen.put("eventoId", eventoId );
-            resumen.put("titulo", evento.getTitulo() );
-            resumen.put("fechaEvento", evento.getFechaHora() );
-            resumen.put("cupoMaximo", evento.getCupoMaximo() );
-            resumen.put("totalInscritos", evento.getTotalInscritos() );
-            resumen.put("totalAsistentes", evento.getTotalAsistentes() );
-            resumen.put("porcentajeAsistencia", Math.round(evento.getPorcentajeAsistencia() * 100.0) / 100.0 );
-            resumen.put("cuposDisponibles", evento.getCuposDisponibles() );
+            resumen.put("eventoId", eventoId);
+            resumen.put("titulo", evento.getTitulo());
+            resumen.put("fechaEvento", evento.getFechaHora());
+            resumen.put("cupoMaximo", evento.getCupoMaximo());
+            resumen.put("totalInscritos", totalInscritos);
+            resumen.put("totalAsistentes", totalAsistentes);
+            resumen.put("porcentajeAsistencia", porcentajeAsistencia);
+            resumen.put("cuposDisponibles", cuposDisponibles);
 
             return resumen;
 
@@ -76,7 +97,6 @@ public class EstadisticaServicio
                         dato.put("cantidad", ((Number) fila[1]).intValue());
                         return dato;
                     })
-
                     .collect(Collectors.toList());
 
         } finally {

@@ -11,48 +11,54 @@ import java.util.List;
 
 public class EventoServicio
 {
-    public Evento crear (String titulo, String descripcion, LocalDateTime fechaHora, String lugar, Integer cupoMaximo, Usuario organizador )
+    public Evento crear(String titulo, String descripcion, LocalDateTime fechaHora,
+                        String lugar, Integer cupoMaximo, Usuario organizador, String imagenUrl)
     {
-        validarEvento( titulo, fechaHora, lugar, cupoMaximo );
-
+        validarEvento(titulo, fechaHora, lugar, cupoMaximo);
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
-
         try {
             tx = session.beginTransaction();
-            Evento evento = new Evento( titulo, descripcion, fechaHora, lugar, cupoMaximo, organizador );
+            Evento evento = new Evento(titulo, descripcion, fechaHora, lugar, cupoMaximo, organizador);
+            evento.setImagenUrl(imagenUrl);
             session.save(evento);
             tx.commit();
             return evento;
         } catch (Exception e) {
-            if ( tx != null ) tx.rollback();
+            if (tx != null) tx.rollback();
             throw e;
         } finally {
             session.close();
         }
     }
 
-    public Evento editar ( Long id, String titulo, String descripcion, LocalDateTime fechaHora, String lugar, Integer cupoMaximo, Usuario solicitante )
+    public Evento crear(String titulo, String descripcion, LocalDateTime fechaHora,
+                        String lugar, Integer cupoMaximo, Usuario organizador)
+    {
+        return crear(titulo, descripcion, fechaHora, lugar, cupoMaximo, organizador, null);
+    }
+
+    public Evento editar(Long id, String titulo, String descripcion, LocalDateTime fechaHora,
+                         String lugar, Integer cupoMaximo, Usuario solicitante, String imagenUrl)
     {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
-
         try {
             tx = session.beginTransaction();
-            Evento evento = (Evento) session.get(Evento.class, id);
+            Evento evento = session.get(Evento.class, id);
 
-            if ( evento == null ) throw new IllegalArgumentException("No existe el evento con el id: " + id);
-
-            if ( !solicitante.puedeGestionarEvento(evento))
+            if (evento == null) throw new IllegalArgumentException("No existe el evento con id: " + id);
+            if (!solicitante.puedeGestionarEvento(evento))
                 throw new SecurityException("No tiene permisos para editar este evento");
-
-            if ( evento.getFechaHora().isBefore(LocalDateTime.now()) )
+            if (evento.getFechaHora().isBefore(LocalDateTime.now()))
                 throw new IllegalStateException("No se puede editar un evento pasado");
 
-            validarEvento( titulo, fechaHora, lugar, cupoMaximo );
+            validarEvento(titulo, fechaHora, lugar, cupoMaximo);
 
+            // Inicializar para poder llamar getTotalInscritos()
+            org.hibernate.Hibernate.initialize(evento.getInscripciones());
             long inscritos = evento.getTotalInscritos();
-            if ( cupoMaximo < inscritos )
+            if (cupoMaximo < inscritos)
                 throw new IllegalArgumentException("No puede reducir el cupo por debajo de " + inscritos + " inscritos");
 
             evento.setTitulo(titulo);
@@ -60,101 +66,93 @@ public class EventoServicio
             evento.setFechaHora(fechaHora);
             evento.setLugar(lugar);
             evento.setCupoMaximo(cupoMaximo);
+            if (imagenUrl != null && !imagenUrl.isEmpty()) {
+                evento.setImagenUrl(imagenUrl);
+            }
 
             session.update(evento);
             tx.commit();
             return evento;
-
         } catch (Exception e) {
-            if ( tx != null ) tx.rollback();
+            if (tx != null) tx.rollback();
             throw e;
         } finally {
             session.close();
         }
     }
 
-    public void cancelar (Long id, Usuario solicitante )
+    public Evento editar(Long id, String titulo, String descripcion, LocalDateTime fechaHora,
+                         String lugar, Integer cupoMaximo, Usuario solicitante)
     {
-        cambiarEstado( id, Evento.Estado.CANCELADO, solicitante );
+        return editar(id, titulo, descripcion, fechaHora, lugar, cupoMaximo, solicitante, null);
     }
 
-    public void publicar ( Long id, Usuario solicitante )
-    {
+    public void cancelar(Long id, Usuario solicitante) {
+        cambiarEstado(id, Evento.Estado.CANCELADO, solicitante);
+    }
+
+    public void publicar(Long id, Usuario solicitante) {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
-
         try {
             tx = session.beginTransaction();
-            Evento evento = (Evento) session.get(Evento.class, id);
-
-            if ( evento == null ) throw new IllegalArgumentException("No existe el evento con el id: " + id);
-            if ( !solicitante.puedeGestionarEvento(evento)) throw new SecurityException("No tiene permisos para publicar");
-            if ( evento.getFechaHora().isBefore(LocalDateTime.now()) ) throw new IllegalStateException("No tiene permisos para publicar");
-
+            Evento evento = session.get(Evento.class, id);
+            if (evento == null) throw new IllegalArgumentException("No existe el evento con id: " + id);
+            if (!solicitante.puedeGestionarEvento(evento)) throw new SecurityException("No tiene permisos");
+            if (evento.getFechaHora().isBefore(LocalDateTime.now()))
+                throw new IllegalStateException("No se puede publicar un evento pasado");
             evento.setEstado(Evento.Estado.PUBLICADO);
             session.update(evento);
             tx.commit();
-
-        } catch ( Exception e ) {
-            if ( tx != null ) tx.rollback();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
             throw e;
         } finally {
             session.close();
         }
     }
 
-    public void despublicar(Long id, Usuario solicitante)
-    {
+    public void despublicar(Long id, Usuario solicitante) {
         cambiarEstado(id, Evento.Estado.BORRADOR, solicitante);
     }
 
-    private void cambiarEstado( Long id, Evento.Estado estado, Usuario solicitante )
-    {
+    private void cambiarEstado(Long id, Evento.Estado estado, Usuario solicitante) {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
-
         try {
             tx = session.beginTransaction();
-            Evento evento = (Evento) session.get(Evento.class, id);
-
-            if ( evento == null ) throw new IllegalArgumentException("No existe el evento con el id: " + id);
-            if ( !solicitante.puedeGestionarEvento(evento)) throw new SecurityException("No tiene permisos para publicar");
-
+            Evento evento = session.get(Evento.class, id);
+            if (evento == null) throw new IllegalArgumentException("No existe el evento con id: " + id);
+            if (!solicitante.puedeGestionarEvento(evento)) throw new SecurityException("No tiene permisos");
             evento.setEstado(estado);
             session.update(evento);
             tx.commit();
-
-        } catch ( Exception e ) {
-            if ( tx != null ) tx.rollback();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
             throw e;
         } finally {
             session.close();
         }
     }
 
-    public void eliminar( Long id, Usuario admin )
-    {
-        if ( !admin.esAdmin())
-            throw new SecurityException("Solo administradores pueden eliminar");
-
+    public void eliminar(Long id, Usuario admin) {
+        if (!admin.esAdmin()) throw new SecurityException("Solo administradores pueden eliminar");
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         Transaction tx = null;
-
         try {
             tx = session.beginTransaction();
-            Evento evento = (Evento) session.get(Evento.class, id);
-            if ( evento != null ) session.delete( evento );
+            Evento evento = session.get(Evento.class, id);
+            if (evento != null) session.delete(evento);
             tx.commit();
-        } catch ( Exception e ) {
-            if ( tx != null ) tx.rollback();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
             throw e;
         } finally {
             session.close();
         }
     }
 
-    public Evento buscarPorId(Long id)
-    {
+    public Evento buscarPorId(Long id) {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {
             Evento evento = session.get(Evento.class, id);
@@ -167,69 +165,67 @@ public class EventoServicio
         }
     }
 
-    public List<Evento> listarPublicados()
-    {
+    /**
+     * FIX: inicializar inscripciones para cada evento ANTES de cerrar la sesión,
+     * así los templates pueden llamar tieneCuposDisponibles(), cuposDisponibles, etc.
+     */
+    public List<Evento> listarPublicados() {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {
             List<Evento> eventos = session.createQuery(
-                            "FROM Evento e WHERE e.estado = 'PUBLICADO' " +
-                                    "AND e.fechaHora > :ahora ORDER BY e.fechaHora ASC", Evento.class)
+                            "FROM Evento e WHERE e.estado = 'PUBLICADO' AND e.fechaHora > :ahora ORDER BY e.fechaHora ASC",
+                            Evento.class)
                     .setParameter("ahora", LocalDateTime.now())
                     .list();
-            // Inicializar colección lazy antes de cerrar la sesión
-            eventos.forEach(e -> org.hibernate.Hibernate.initialize(e.getInscripciones()));
+            // Inicializar la colección lazy de cada evento mientras la sesión está abierta
+            for (Evento e : eventos) {
+                org.hibernate.Hibernate.initialize(e.getInscripciones());
+            }
             return eventos;
         } finally {
             session.close();
         }
     }
 
-    public List<Evento> listarPorOrganizador(Long organizadorId)
-    {
+    public List<Evento> listarPorOrganizador(Long organizadorId) {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {
             List<Evento> eventos = session.createQuery(
-                            "FROM Evento e WHERE e.organizador.id = :id " +
-                                    "ORDER BY e.fechaCreacion DESC", Evento.class)
+                            "FROM Evento e WHERE e.organizador.id = :id ORDER BY e.fechaCreacion DESC",
+                            Evento.class)
                     .setParameter("id", organizadorId)
                     .list();
-            // FIX: inicializar inscripciones antes de cerrar la sesión para evitar
-            // LazyInitializationException cuando Thymeleaf accede a totalInscritos/cuposDisponibles
-            eventos.forEach(e -> org.hibernate.Hibernate.initialize(e.getInscripciones()));
+            for (Evento e : eventos) {
+                org.hibernate.Hibernate.initialize(e.getInscripciones());
+            }
             return eventos;
         } finally {
             session.close();
         }
     }
 
-    public List<Evento> listarTodos()
-    {
+    public List<Evento> listarTodos() {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
         try {
             List<Evento> eventos = session.createQuery(
                             "FROM Evento ORDER BY fechaCreacion DESC", Evento.class)
                     .list();
-            // FIX: inicializar inscripciones antes de cerrar la sesión para evitar
-            // LazyInitializationException cuando Thymeleaf accede a totalInscritos/cuposDisponibles
-            // en /admin/eventos y /admin/dashboard (ultimosEventos)
-            eventos.forEach(e -> org.hibernate.Hibernate.initialize(e.getInscripciones()));
+            for (Evento e : eventos) {
+                org.hibernate.Hibernate.initialize(e.getInscripciones());
+            }
             return eventos;
         } finally {
             session.close();
         }
     }
 
-    private void validarEvento(String titulo, LocalDateTime fechaHora, String lugar, Integer cupoMaximo)
-    {
+    private void validarEvento(String titulo, LocalDateTime fechaHora, String lugar, Integer cupoMaximo) {
         if (titulo == null || titulo.trim().isEmpty())
             throw new IllegalArgumentException("Título obligatorio");
-
         if (fechaHora == null || fechaHora.isBefore(LocalDateTime.now()))
             throw new IllegalArgumentException("Fecha debe ser futura");
-
         if (lugar == null || lugar.trim().isEmpty())
             throw new IllegalArgumentException("Lugar obligatorio");
-
         if (cupoMaximo == null || cupoMaximo < 1)
             throw new IllegalArgumentException("Cupo mínimo 1");
     }
