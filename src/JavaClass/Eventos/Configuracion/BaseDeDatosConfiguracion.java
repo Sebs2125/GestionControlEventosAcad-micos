@@ -25,11 +25,7 @@ public class BaseDeDatosConfiguracion
                         Configuration configuration = new Configuration();
                         Properties settings = new Properties();
 
-                        // Punto 10a-3: H2 en MODO SERVIDOR (tcp://)
-                        // En desarrollo local: jdbc:h2:tcp://localhost/~/eventos_academicos
-                        // En Docker se sobreescribe con la variable DB_URL del Compose
-                        String dbUrl  = System.getenv().getOrDefault("DB_URL",
-                                "jdbc:h2:tcp://localhost/~/eventos_academicos");
+                        String dbUrl  = System.getenv().getOrDefault("DB_URL",  "jdbc:h2:~/eventos_academicos");
                         String dbUser = System.getenv().getOrDefault("DB_USER", "sa");
                         String dbPass = System.getenv().getOrDefault("DB_PASS", "");
 
@@ -39,18 +35,10 @@ public class BaseDeDatosConfiguracion
                         settings.put(Environment.PASS,    dbPass);
                         settings.put(Environment.DIALECT, "org.hibernate.dialect.H2Dialect");
 
-                        // Punto 10a-4: creación automática de tablas
                         String hbm2ddl = System.getProperty("dev.mode") != null ? "create-drop" : "update";
                         settings.put(Environment.HBM2DDL_AUTO, hbm2ddl);
                         settings.put(Environment.SHOW_SQL,   "false");
                         settings.put(Environment.FORMAT_SQL, "true");
-
-                        // Connection pool con HikariCP
-                        settings.put(Environment.CONNECTION_PROVIDER,
-                                "org.hibernate.hikaricp.internal.HikariCPConnectionProvider");
-                        settings.put("hibernate.hikari.maximumPoolSize", "10");
-                        settings.put("hibernate.hikari.minimumIdle",     "2");
-                        settings.put("hibernate.hikari.idleTimeout",     "300000");
 
                         configuration.setProperties(settings);
 

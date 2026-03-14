@@ -41,8 +41,9 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="evento : ${eventos}" th:class="${evento.estado == 'CANCELADO'} ? 'table-secondary'">
-                        <td>
+                    th:class="${evento.estado.name() == 'CANCELADO'} ? 'table-secondary'"
+
+                    <td>
                             <div class="fw-bold" th:text="${evento.titulo}">Título</div>
                             <small class="text-muted" th:text="${#strings.abbreviate(evento.descripcion, 50)}">Desc</small>
                         </td>

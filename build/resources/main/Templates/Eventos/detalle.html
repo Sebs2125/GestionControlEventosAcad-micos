@@ -40,7 +40,8 @@
                     </div>
 
                     <h6 class="text-muted text-uppercase small fw-bold mb-2">Descripción</h6>
-                    <p class="lead" th:text="${evento.descripcion} ?: 'Sin descripción disponible.'">Descripción...</p>
+                    <p class="lead"
+                       th:text="${evento.descripcion != null ? evento.descripcion : 'Sin descripción disponible.'}">Descripción...</p>
 
                     <hr class="my-4">
 
@@ -157,15 +158,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script th:inline="javascript">
         /*<![CDATA[*/
+
         const eventoId = [[${evento.id}]];
-        const usuarioLogueado = [[${session.usuario != null}]];
+        const usuarioLogueado = [[${session.usuario != null}]]
 
         // Generar QR si hay inscripción activa
         const inscripcion = /*[[${inscripcion}]]*/ null;
         if (inscripcion && inscripcion.estado === 'ACTIVA') {
             const qrData = JSON.stringify({
                 eventoId: eventoId,
-                usuarioId: /*[[${session.usuario?.id}]]*/ 0,
+                usuarioId: /*[[${session.usuario != null ? session.usuario.id : 0}]]*/ 0,
                 token: inscripcion.tokenQR
             });
 
