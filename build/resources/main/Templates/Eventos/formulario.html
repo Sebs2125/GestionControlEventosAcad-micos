@@ -10,54 +10,63 @@
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/organizador/dashboard">Dashboard</a></li>
-                    <li class="breadcrumb-item active" th:text="${editar} ? 'Editar Evento' : 'Nuevo Evento'">Formulario</li>
+                    <li class="breadcrumb-item active"
+                        th:text="${editar} ? 'Editar Evento' : 'Nuevo Evento'">Formulario</li>
                 </ol>
             </nav>
 
             <div class="card shadow">
                 <div class="card-header bg-white py-3">
-                    <h4 class="mb-0" th:text="${editar} ? 'Editar Evento' : 'Crear Nuevo Evento'">Título</h4>
+                    <h4 class="mb-0"
+                        th:text="${editar} ? 'Editar Evento' : 'Crear Nuevo Evento'">Título</h4>
                 </div>
                 <div class="card-body p-4">
+
                     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-                    <form th:if="${editar}"
-                          th:action="@{'/organizador/eventos/' + ${evento.id} + '/editar'}"
-                          method="post" class="needs-validation" novalidate>
-                        <!-- contenido del formulario -->
-                    </form>
-
-                    <form th:unless="${editar}"
-                          th:action="@{/organizador/eventos}"
-                          method="post" class="needs-validation" novalidate>
-                        <!-- contenido del formulario -->
-                    </form>
+                    <!--
+                        Bug corregido: el original tenía dos <form> que se cerraban
+                        antes de los campos, dejando todos los inputs fuera del form.
+                        Solución: un único form con acción dinámica según editar/crear.
+                    -->
+                    <form id="form-evento"
+                          th:action="${editar} ? @{'/organizador/eventos/' + ${evento.id} + '/editar'} : @{/organizador/eventos}"
+                          method="post"
+                          class="needs-validation"
+                          novalidate>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Título del Evento *</label>
                             <input type="text" name="titulo" class="form-control form-control-lg"
                                    th:value="${evento != null ? evento.titulo : ''}"
-                                   required maxlength="200">
+                                   required minlength="3" maxlength="200"
+                                   placeholder="Ej. Charla sobre Inteligencia Artificial">
+                            <div class="invalid-feedback">El título debe tener al menos 3 caracteres.</div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Descripción</label>
                             <textarea name="descripcion" class="form-control" rows="4"
-                                      th:text="${evento != null ? evento.descripcion : ''}"
-                                      maxlength="2000"></textarea>
+                                      maxlength="2000"
+                                      placeholder="Describe de qué trata el evento..."
+                                      th:text="${evento != null ? evento.descripcion : ''}"></textarea>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Fecha y Hora *</label>
                                 <input type="datetime-local" name="fechaHora" class="form-control"
-                                       th:value="${fechaFormateada}" required>
+                                       th:value="${fechaFormateada}"
+                                       required>
+                                <div class="invalid-feedback">Selecciona una fecha y hora futuras.</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Lugar *</label>
                                 <input type="text" name="lugar" class="form-control"
                                        th:value="${evento != null ? evento.lugar : ''}"
-                                       required maxlength="200">
+                                       required maxlength="200"
+                                       placeholder="Ej. Aula Magna, Edificio A">
+                                <div class="invalid-feedback">El lugar es obligatorio.</div>
                             </div>
                         </div>
 
@@ -66,7 +75,8 @@
                             <input type="number" name="cupoMaximo" class="form-control"
                                    th:value="${evento != null ? evento.cupoMaximo : 50}"
                                    min="1" max="10000" required>
-                            <div class="form-text">Máximo número de participantes permitidos.</div>
+                            <div class="form-text text-muted">Número máximo de participantes.</div>
+                            <div class="invalid-feedback">El cupo mínimo es 1.</div>
                         </div>
 
                         <div class="d-flex gap-2">
@@ -74,8 +84,10 @@
                                 <i class="bi bi-check-lg me-2"></i>
                                 <span th:text="${editar} ? 'Guardar Cambios' : 'Crear Evento'">Guardar</span>
                             </button>
-                            <a href="/organizador/dashboard" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                            <a href="/organizador/dashboard"
+                               class="btn btn-outline-secondary btn-lg">Cancelar</a>
                         </div>
+
                     </form>
                 </div>
             </div>
