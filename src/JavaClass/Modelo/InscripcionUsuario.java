@@ -1,11 +1,13 @@
 package Modelo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table( name = "inscripciones", uniqueConstraints = @UniqueConstraint(columnNames = {"evento_id", "participante_id"}))
-
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class InscripcionUsuario
 {
     public enum Estado {
@@ -18,10 +20,12 @@ public class InscripcionUsuario
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "evento_id", nullable = false)
+    @JsonIgnoreProperties({"inscripciones", "organizador", "hibernateLazyInitializer", "handler"})
     private Evento evento;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "participante_id", nullable = false)
+    @JsonIgnoreProperties({"inscripciones", "eventosOrganizados", "password", "hibernateLazyInitializer", "handler"})
     private Usuario participante;
 
     @Enumerated(EnumType.STRING)
@@ -32,7 +36,7 @@ public class InscripcionUsuario
     private LocalDateTime fechaInscripcion = LocalDateTime.now();
 
     @Column(name = "fecha_asistencia")
-    private LocalDateTime fechaAsistencia = LocalDateTime.now();
+    private LocalDateTime fechaAsistencia = null;
 
     private boolean asistio = false;
 
@@ -48,81 +52,31 @@ public class InscripcionUsuario
         this.tokenQR = tokenQR;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Evento getEvento() {
-        return evento;
-    }
-
-    public void setEvento(Evento evento) {
-        this.evento = evento;
-    }
-
-    public Usuario getParticipante() {
-        return participante;
-    }
-
-    public void setParticipante(Usuario participante) {
-        this.participante = participante;
-    }
-
-    public Estado getEstado() {
-        return estado;
-    }
-
-    public void setEstado(Estado estado) {
-        this.estado = estado;
-    }
-
-    public LocalDateTime getFechaInscripcion() {
-        return fechaInscripcion;
-    }
-
-    public void setFechaInscripcion(LocalDateTime fechaInscripcion) {
-        this.fechaInscripcion = fechaInscripcion;
-    }
-
-    public LocalDateTime getFechaAsistencia() {
-        return fechaAsistencia;
-    }
-
-    public void setFechaAsistencia(LocalDateTime fechaAsistencia) {
-        this.fechaAsistencia = fechaAsistencia;
-    }
-
-    public boolean isAsistio() {
-        return asistio;
-    }
-
-    public void setAsistio(boolean asistio) {
-        this.asistio = asistio;
-    }
-
-    public String getTokenQR() {
-        return tokenQR;
-    }
-
-    public void setTokenQR(String tokenQR) {
-        this.tokenQR = tokenQR;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Evento getEvento() { return evento; }
+    public void setEvento(Evento evento) { this.evento = evento; }
+    public Usuario getParticipante() { return participante; }
+    public void setParticipante(Usuario participante) { this.participante = participante; }
+    public Estado getEstado() { return estado; }
+    public void setEstado(Estado estado) { this.estado = estado; }
+    public LocalDateTime getFechaInscripcion() { return fechaInscripcion; }
+    public void setFechaInscripcion(LocalDateTime fechaInscripcion) { this.fechaInscripcion = fechaInscripcion; }
+    public LocalDateTime getFechaAsistencia() { return fechaAsistencia; }
+    public void setFechaAsistencia(LocalDateTime fechaAsistencia) { this.fechaAsistencia = fechaAsistencia; }
+    public boolean isAsistio() { return asistio; }
+    public void setAsistio(boolean asistio) { this.asistio = asistio; }
+    public String getTokenQR() { return tokenQR; }
+    public void setTokenQR(String tokenQR) { this.tokenQR = tokenQR; }
 
     public void marcarAsistencia() {
-        if ( !this.asistio)
-        {
+        if (!this.asistio) {
             this.asistio = true;
             this.fechaAsistencia = LocalDateTime.now();
         }
     }
 
-    public void cancelar()
-    {
+    public void cancelar() {
         this.estado = Estado.CANCELADA;
     }
-
 }

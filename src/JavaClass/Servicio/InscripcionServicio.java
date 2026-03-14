@@ -21,23 +21,19 @@ public class InscripcionServicio {
         try {
             tx = session.beginTransaction();
 
-            // Verificar que el evento existe y está publicado
             Evento evento = session.get(Evento.class, eventoId);
             if (evento == null || evento.getEstado() != Evento.Estado.PUBLICADO) {
                 throw new IllegalArgumentException("Evento no disponible");
             }
 
-            // Verificar cupo
             if (!evento.tieneCuposDisponibles()) {
                 throw new IllegalStateException("No hay cupos disponibles");
             }
 
-            // Verificar que no haya pasado el evento
             if (evento.getFechaHora().isBefore(LocalDateTime.now())) {
                 throw new IllegalStateException("El evento ya pasó");
             }
 
-            // Verificar que no esté ya inscrito activamente
             InscripcionUsuario existente = buscarPorEventoYParticipante(session, eventoId, participanteId);
             if (existente != null && existente.getEstado() == InscripcionUsuario.Estado.ACTIVA) {
                 throw new IllegalStateException("Ya estás inscrito en este evento");
@@ -48,12 +44,10 @@ public class InscripcionServicio {
                 throw new IllegalArgumentException("Usuario no encontrado");
             }
 
-            // Generar token QR único
             String tokenQR = UUID.randomUUID().toString();
 
             InscripcionUsuario inscripcion;
             if (existente != null) {
-                // Reactivar inscripción cancelada
                 existente.setEstado(InscripcionUsuario.Estado.ACTIVA);
                 existente.setFechaInscripcion(LocalDateTime.now());
                 existente.setAsistio(false);
@@ -61,7 +55,6 @@ public class InscripcionServicio {
                 session.update(existente);
                 inscripcion = existente;
             } else {
-                // Nueva inscripción
                 inscripcion = new InscripcionUsuario(evento, participante, tokenQR);
                 session.save(inscripcion);
             }
@@ -99,7 +92,6 @@ public class InscripcionServicio {
                 throw new IllegalStateException("La inscripción ya está cancelada");
             }
 
-            // Verificar que el evento no haya pasado
             if (inscripcion.getEvento().getFechaHora().isBefore(LocalDateTime.now())) {
                 throw new IllegalStateException("No puedes cancelar inscripciones de eventos pasados");
             }
@@ -152,21 +144,10 @@ public class InscripcionServicio {
         }
     }
 
-    public InscripcionUsuario buscarPorTokenQR(String token)
-    {
-        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
-        try {
-            return session.createQuery(
-                            "FROM InscripcionUsuario i WHERE i.tokenQR = :token",
-                            InscripcionUsuario.class)
-                    .setParameter("token", token)
-                    .uniqueResult();
-        } finally {
-            session.close();
-        }
-    }
-
-
+    // FIX 2 (Alta): marcarAsistencia ahora busca la inscripción dentro de la misma
+    // sesión/transacción activa, evitando NonUniqueObjectException que ocurría cuando
+    // buscarPorTokenQR abría una segunda sesión y devolvía una entidad adjunta a ella;
+    // al hacer session.update() con la entidad de otra sesión Hibernate lanzaba la excepción.
     public void marcarAsistencia(String tokenQR)
     {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
@@ -175,7 +156,12 @@ public class InscripcionServicio {
         try {
             tx = session.beginTransaction();
 
-            InscripcionUsuario inscripcion = buscarPorTokenQR(tokenQR);
+            // Buscar dentro de la sesión activa (no llamar a buscarPorTokenQR que abre otra)
+            InscripcionUsuario inscripcion = session.createQuery(
+                            "FROM InscripcionUsuario i WHERE i.tokenQR = :token",
+                            InscripcionUsuario.class)
+                    .setParameter("token", tokenQR)
+                    .uniqueResult();
 
             if (inscripcion == null) {
                 throw new IllegalArgumentException("QR no válido");
@@ -197,6 +183,21 @@ public class InscripcionServicio {
         } catch (Exception e) {
             if (tx != null) tx.rollback();
             throw new RuntimeException(e.getMessage());
+        } finally {
+            session.close();
+        }
+    }
+
+    // Método auxiliar conservado para otros usos que no impliquen una tx activa
+    public InscripcionUsuario buscarPorTokenQR(String token)
+    {
+        Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
+        try {
+            return session.createQuery(
+                            "FROM InscripcionUsuario i WHERE i.tokenQR = :token",
+                            InscripcionUsuario.class)
+                    .setParameter("token", token)
+                    .uniqueResult();
         } finally {
             session.close();
         }

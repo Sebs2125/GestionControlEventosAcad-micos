@@ -7,7 +7,6 @@ plugins {
 group = 'edu.pucmm'
 version = '1.0-SNAPSHOT'
 
-// Control de versión de Java
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -85,9 +84,11 @@ test {
     useJUnitPlatform()
 }
 
-// Tarea personalizada para ejecutar con hot-reload en desarrollo
+// FIX 5 (Media): corregido mainClass de 'edu.pucmm.eventos.Main' a 'Eventos.Main'
+// El paquete real es Eventos (mayúscula), no edu.pucmm.eventos.
+// La tarea runDev fallaba inmediatamente con ClassNotFoundException.
 task runDev(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'edu.pucmm.eventos.Main'
+    mainClass = 'Eventos.Main'
     systemProperty 'dev.mode', 'true'
 }

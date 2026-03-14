@@ -10,6 +10,8 @@ import io.javalin.http.Context;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,7 +19,20 @@ public class EventoControlador
 {
     private final EventoServicio eventoServicio;
     private InscripcionServicio inscripcionServicio;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+    // Formatter para mostrar fecha en el formulario de edición
+    private final DateTimeFormatter formatterDisplay = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
+    // FIX: parser flexible que acepta tanto "yyyy-MM-ddTHH:mm" (sin segundos, del input HTML)
+    // como "yyyy-MM-ddTHH:mm:ss" (con segundos). Sin esto, al editar sin tocar la fecha
+    // el parseo fallaba porque el datetime-local del navegador no incluye segundos.
+    private final DateTimeFormatter formatterParse = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd'T'HH:mm")
+            .optionalStart()
+            .appendPattern(":ss")
+            .optionalEnd()
+            .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+            .toFormatter();
 
     public EventoControlador( EventoServicio eventoServicio, InscripcionServicio inscripcionServicio )
     {
@@ -109,7 +124,7 @@ public class EventoControlador
             eventoServicio.crear(
                     ctx.formParam("titulo"),
                     ctx.formParam("descripcion"),
-                    LocalDateTime.parse(ctx.formParam("fechaHora")),
+                    LocalDateTime.parse(ctx.formParam("fechaHora"), formatterParse),
                     ctx.formParam("lugar"),
                     Integer.parseInt(ctx.formParam("cupoMaximo")),
                     organizador
@@ -139,7 +154,8 @@ public class EventoControlador
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
         modelo.put("editar", true);
-        modelo.put("fechaFormateada", evento.getFechaHora().format(formatter));
+        // Formatear para que el input datetime-local lo muestre correctamente
+        modelo.put("fechaFormateada", evento.getFechaHora().format(formatterDisplay));
         ctx.render("/eventos/formulario.html", modelo);
     }
 
@@ -153,7 +169,7 @@ public class EventoControlador
                     id,
                     ctx.formParam("titulo"),
                     ctx.formParam("descripcion"),
-                    LocalDateTime.parse(ctx.formParam("fechaHora")),
+                    LocalDateTime.parse(ctx.formParam("fechaHora"), formatterParse),
                     ctx.formParam("lugar"),
                     Integer.parseInt(ctx.formParam("cupoMaximo")),
                     u

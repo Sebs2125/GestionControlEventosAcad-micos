@@ -20,7 +20,6 @@ public class ApiControlador
     private final EventoServicio eventoServicio;
     private final EstadisticaServicio estadisticaServicio;
 
-    // FIX: usar la instancia inyectada, no crear una nueva
     public ApiControlador(InscripcionServicio inscripcionServicio,
                           EventoServicio eventoServicio,
                           EstadisticaServicio estadisticaServicio)
@@ -35,7 +34,11 @@ public class ApiControlador
         // Endpoint público para cupos (no requiere auth)
         app.get("/api/eventos/{id}/cupos", this::obtenerCupos);
 
-        // FIX: el before debe detener la cadena con resultado, no solo setear status
+        // FIX 1 (Alta): lanzar UnauthorizedResponse (HttpResponseException) para detener
+        // realmente la cadena en Javalin 5. ctx.skipRemainingHandlers() no existe en Javalin 5
+        // y ctx.endpointHandlerPath() tampoco detenía el flujo.
+        // Lanzar una HttpResponseException es el mecanismo correcto: Javalin la captura,
+        // devuelve el status indicado y no continúa con los handlers posteriores.
         app.before("/api/*", ctx -> {
             String path = ctx.path();
             // Excluir rutas públicas
@@ -44,10 +47,14 @@ public class ApiControlador
                 return;
             }
             if (ctx.sessionAttribute("usuario") == null) {
-                ctx.status(401).json(Map.of("error", "No autenticado"));
-                ctx.endpointHandlerPath(); // FIX: detener cadena
+                throw new io.javalin.http.UnauthorizedResponse("No autenticado");
             }
         });
+
+        // Devolver la excepción como JSON para que los clientes REST reciban JSON 401
+        app.exception(io.javalin.http.UnauthorizedResponse.class, (e, ctx) ->
+                ctx.status(401).json(Map.of("error", e.getMessage()))
+        );
 
         // Inscripciones
         app.post("/api/inscripciones", this::crearInscripcion);

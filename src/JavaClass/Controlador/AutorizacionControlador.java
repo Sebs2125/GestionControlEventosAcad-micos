@@ -27,6 +27,10 @@ public class AutorizacionControlador
 
         app.before( ctx -> {
             String path = ctx.path();
+            // FIX 4 (Media): excluir /api/* del before que redirige a /login.
+            // Antes, las rutas /api/* eran interceptadas aquí y recibían una
+            // redirección HTML 302 en vez del JSON 401 que devuelve ApiControlador,
+            // rompiendo a clientes REST. ApiControlador ya maneja su propia auth.
             if (esRutaProtegida(path) && ctx.sessionAttribute("usuario") == null)
             {
                 ctx.redirect("/login");
@@ -51,7 +55,7 @@ public class AutorizacionControlador
 
         Usuario usuario = usuarioServicio.validarLogin(username, password);
 
-        if ( usuario != null )  // CORREGIDO: era == null
+        if ( usuario != null )
         {
             ctx.sessionAttribute("usuario", usuario);
             ctx.sessionAttribute("rol", usuario.getRol().toString());
@@ -120,9 +124,11 @@ public class AutorizacionControlador
 
     private boolean esRutaProtegida(String path)
     {
+        // FIX 4: /api/* se excluye aquí porque ApiControlador devuelve JSON 401,
+        // no una redirección HTML. Incluirlo aquí sobrescribía esa respuesta.
         return path.startsWith("/admin/") ||
                 path.startsWith("/organizador/") ||
-                path.startsWith("/api/") ||
                 path.startsWith("/dashboard");
+        // NOTA: /api/* eliminado intencionalmente — manejado por ApiControlador
     }
 }
