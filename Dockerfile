@@ -37,9 +37,9 @@ EXPOSE 7000
 
 # Variables de entorno por defecto (se sobreescriben en docker-compose)
 ENV PORT=7000
-    DB_URL=jdbc:h2:tcp://h2-server/~/eventos_academicos
-    DB_USER=sa
-    DB_PASS=sa
+ENV DB_URL=jdbc:h2:tcp://h2-server/~/eventos_academicos
+ENV DB_USER=sa
+ENV DB_PASS=sa
 
 # Ejecutar la aplicación
 ENTRYPOINT ["java", "-jar", "app.jar"]

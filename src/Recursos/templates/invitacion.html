@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: layout('Mi Invitación', ~{::main})}">
+    <title>Invitación</title>
+</head>
+<body>
+<main>
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-5">
+
+            <!-- Estado de la inscripción -->
+            <div th:if="${inscripcion.estado.name() == 'ACTIVA'}"
+                 class="alert alert-success text-center mb-4">
+                <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
+                <strong>Inscripción válida</strong>
+            </div>
+            <div th:unless="${inscripcion.estado.name() == 'ACTIVA'}"
+                 class="alert alert-danger text-center mb-4">
+                <i class="bi bi-x-circle-fill fs-3 d-block mb-2"></i>
+                <strong>Esta inscripción fue cancelada</strong>
+            </div>
+
+            <!-- Tarjeta del evento -->
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-primary text-white py-3 text-center">
+                    <i class="bi bi-calendar-event fs-4 me-2"></i>
+                    <strong th:text="${evento.titulo}">Título</strong>
+                </div>
+                <div class="card-body p-4">
+
+                    <div class="mb-3 d-flex align-items-start gap-3">
+                        <i class="bi bi-calendar-check text-primary fs-5 mt-1"></i>
+                        <div>
+                            <div class="text-muted small">Fecha y Hora</div>
+                            <div class="fw-bold"
+                                 th:text="${#temporals.format(evento.fechaHora, 'EEEE, dd MMMM yyyy')}">
+                                Fecha</div>
+                            <div class="text-muted"
+                                 th:text="${#temporals.format(evento.fechaHora, 'HH:mm')} + ' hrs'">
+                                Hora</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-flex align-items-start gap-3">
+                        <i class="bi bi-geo-alt text-danger fs-5 mt-1"></i>
+                        <div>
+                            <div class="text-muted small">Lugar</div>
+                            <div class="fw-bold" th:text="${evento.lugar}">Lugar</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-flex align-items-start gap-3">
+                        <i class="bi bi-person-circle text-secondary fs-5 mt-1"></i>
+                        <div>
+                            <div class="text-muted small">Organizado por</div>
+                            <div class="fw-bold"
+                                 th:text="${evento.organizador.nombre}">Organizador</div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Datos del participante -->
+                    <div class="mb-3 d-flex align-items-start gap-3">
+                        <i class="bi bi-mortarboard text-success fs-5 mt-1"></i>
+                        <div>
+                            <div class="text-muted small">Participante</div>
+                            <div class="fw-bold"
+                                 th:text="${participante.nombre}">Nombre</div>
+                            <div class="text-muted small"
+                                 th:text="${participante.email}">Email</div>
+                        </div>
+                    </div>
+
+                    <!-- Estado de asistencia -->
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="bi bi-qr-code text-info fs-5 mt-1"></i>
+                        <div>
+                            <div class="text-muted small">Estado de Asistencia</div>
+                            <span th:if="${inscripcion.asistio}"
+                                  class="badge bg-success fs-6">
+                                <i class="bi bi-check-circle me-1"></i>Asistencia registrada
+                            </span>
+                            <span th:unless="${inscripcion.asistio}"
+                                  class="badge bg-warning text-dark fs-6">
+                                <i class="bi bi-clock me-1"></i>Pendiente de asistencia
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer bg-light text-center text-muted small py-2">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Token: <code th:text="${#strings.abbreviate(inscripcion.tokenQR, 16)}">****</code>
+                </div>
+            </div>
+
+            <p class="text-center text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                Presenta este QR al organizador el día del evento para registrar tu asistencia.
+            </p>
+
+        </div>
+    </div>
+</main>
+</body>
+</html>

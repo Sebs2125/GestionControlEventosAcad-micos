@@ -57,6 +57,7 @@ public class EventoControlador
         app.post("/organizador/eventos/{id}/cancelar", this::cancelar);
         app.get("/organizador/eventos/{id}/resumen", this::verResumen);
         app.get("/organizador/eventos/{id}/escaner", this::verEscaner);
+        app.get("/invitacion", this::verInvitacion);
     }
 
     private void listarLista(Context ctx)
@@ -264,4 +265,31 @@ public class EventoControlador
         modelo.put("rol", ctx.sessionAttribute("rol"));
         return modelo;
     }
+
+    private void verInvitacion(Context ctx)
+    {
+        String token = ctx.queryParam("token");
+
+        if (token == null || token.isBlank())
+        {
+            ctx.status(400).result("Token inválido");
+            return;
+        }
+
+        // Buscar la inscripción por token QR
+        InscripcionUsuario inscripcion = inscripcionServicio.buscarPorTokenQR(token);
+
+        if (inscripcion == null)
+        {
+            ctx.status(404).render("/invitacion-invalida.html", new java.util.HashMap<>());
+            return;
+        }
+
+        Map<String, Object> modelo = new HashMap<>();
+        modelo.put("inscripcion", inscripcion);
+        modelo.put("evento",      inscripcion.getEvento());
+        modelo.put("participante", inscripcion.getParticipante());
+        ctx.render("/invitacion.html", modelo);
+    }
+
 }

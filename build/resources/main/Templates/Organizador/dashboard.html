@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head th:replace="~{layout :: layout('Dashboard Organizador', ~{::main})}">
     <title>Dashboard Organizador</title>
 </head>
 <body>
@@ -8,14 +8,13 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2><i class="bi bi-speedometer2 me-2"></i>Mis Eventos</h2>
-            <p class="text-muted mb-0">Gestiona tus eventos académicos</p>
+            <p class="text-muted mb-0">Gestiona tus eventos academicos</p>
         </div>
         <a href="/organizador/eventos/nuevo" class="btn btn-primary btn-lg">
             <i class="bi bi-plus-circle me-2"></i>Nuevo Evento
         </a>
     </div>
 
-    <!-- Alertas -->
     <div th:if="${exito}" class="alert alert-success alert-dismissible fade show">
         <i class="bi bi-check-circle me-2"></i><span th:text="${exito}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -25,7 +24,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Tabla de Eventos -->
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -41,32 +39,37 @@
                     </tr>
                     </thead>
                     <tbody>
-                    th:class="${evento.estado.name() == 'CANCELADO'} ? 'table-secondary'"
-
-                    <td>
-                            <div class="fw-bold" th:text="${evento.titulo}">Título</div>
-                            <small class="text-muted" th:text="${#strings.abbreviate(evento.descripcion, 50)}">Desc</small>
+                    <!-- FIX: th:each en el <tr>, th:class usando .name() -->
+                    <tr th:each="evento : ${eventos}"
+                        th:class="${evento.estado.name() == 'CANCELADO'} ? 'table-secondary'">
+                        <td>
+                            <div class="fw-bold" th:text="${evento.titulo}">Titulo</div>
+                            <small class="text-muted"
+                                   th:text="${#strings.abbreviate(evento.descripcion, 50)}">Desc</small>
                         </td>
                         <td>
                             <i class="bi bi-calendar me-1 text-primary"></i>
                             <span th:text="${#temporals.format(evento.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span>
                         </td>
-                        <td><i class="bi bi-geo-alt me-1 text-danger"></i><span th:text="${evento.lugar}">Lugar</span></td>
                         <td>
-                                <span class="badge bg-info">
-                                    <span th:text="${evento.cuposDisponibles}">0</span> / <span th:text="${evento.cupoMaximo}">0</span>
-                                </span>
+                            <i class="bi bi-geo-alt me-1 text-danger"></i>
+                            <span th:text="${evento.lugar}">Lugar</span>
                         </td>
                         <td>
-                                <span th:switch="${evento.estado.name()}">
-                                    <span th:case="'BORRADOR'" class="badge bg-warning text-dark">Borrador</span>
-                                    <span th:case="'PUBLICADO'" class="badge bg-success">Publicado</span>
-                                    <span th:case="'CANCELADO'" class="badge bg-danger">Cancelado</span>
-                                </span>
+                            <span class="badge bg-info">
+                                <span th:text="${evento.cuposDisponibles}">0</span> /
+                                <span th:text="${evento.cupoMaximo}">0</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span th:switch="${evento.estado.name()}">
+                                <span th:case="'BORRADOR'" class="badge bg-warning text-dark">Borrador</span>
+                                <span th:case="'PUBLICADO'" class="badge bg-success">Publicado</span>
+                                <span th:case="'CANCELADO'" class="badge bg-danger">Cancelado</span>
+                            </span>
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
-                                <!-- Publicar/Despublicar -->
                                 <form th:if="${evento.estado.name() == 'BORRADOR'}"
                                       th:action="@{'/organizador/eventos/' + ${evento.id} + '/publicar'}"
                                       method="post" class="d-inline">
@@ -81,22 +84,22 @@
                                         <i class="bi bi-eye-slash"></i>
                                     </button>
                                 </form>
-
-                                <!-- Editar -->
                                 <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/editar'}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-
-                                <!-- Cancelar -->
                                 <form th:if="${evento.estado.name() != 'CANCELADO'}"
                                       th:action="@{'/organizador/eventos/' + ${evento.id} + '/cancelar'}"
                                       method="post" class="d-inline"
-                                      onsubmit="return confirm('¿Cancelar este evento?');">
+                                      onsubmit="return confirm('Cancelar este evento?');">
                                     <button type="submit" class="btn btn-outline-danger" title="Cancelar">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </form>
+                                <a th:href="@{'/organizador/eventos/' + ${evento.id} + '/resumen'}"
+                                   class="btn btn-outline-info" title="Resumen">
+                                    <i class="bi bi-bar-chart"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -104,7 +107,9 @@
                         <td colspan="6" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox display-4 d-block mb-3"></i>
                             No tienes eventos creados.<br>
-                            <a href="/organizador/eventos/nuevo" class="btn btn-primary mt-3">Crear mi primer evento</a>
+                            <a href="/organizador/eventos/nuevo" class="btn btn-primary mt-3">
+                                Crear mi primer evento
+                            </a>
                         </td>
                     </tr>
                     </tbody>

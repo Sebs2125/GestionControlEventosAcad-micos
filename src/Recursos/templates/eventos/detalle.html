@@ -159,27 +159,34 @@
     <script th:inline="javascript">
         /*<![CDATA[*/
 
-        const eventoId = [[${evento.id}]];
-        const usuarioLogueado = [[${session.usuario != null}]]
+        const eventoId        = [[${evento.id}]];
+        const usuarioLogueado = [[${session.usuario != null}]];
 
-        // Generar QR si hay inscripción activa
-        const inscripcion = /*[[${inscripcion}]]*/ null;
-        if (inscripcion && inscripcion.estado === 'ACTIVA') {
-            const qrData = JSON.stringify({
-                eventoId: eventoId,
-                usuarioId: /*[[${session.usuario != null ? session.usuario.id : 0}]]*/ 0,
-                token: inscripcion.tokenQR
-            });
+        // Thymeleaf inyecta el token directamente como string para evitar
+        // problemas de serialización del objeto inscripcion completo
+        const tokenQR     = [[${inscripcion != null ? inscripcion.tokenQR : null}]];
+        const estadoInsc  = [[${inscripcion != null ? inscripcion.estado.name() : null}]];
+        const inscripcionId = [[${inscripcion != null ? inscripcion.id : null}]];
 
-            new QRCode(document.getElementById("qrcode"), {
-                text: qrData,
-                width: 150,
-                height: 150,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        }
+        // Generar QR cuando el DOM esté listo y qrcodejs esté cargado
+        document.addEventListener('DOMContentLoaded', function () {
+            if (tokenQR && estadoInsc === 'ACTIVA') {
+                const qrContainer = document.getElementById('qrcode');
+                if (qrContainer && typeof QRCode !== 'undefined') {
+                    const baseUrl = window.location.origin;
+                    const qrUrl   = baseUrl + '/invitacion?token=' + tokenQR;
+
+                    new QRCode(qrContainer, {
+                        text: qrUrl,
+                        width: 160,
+                        height: 160,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+            }
+        });
 
         function mostrarMensaje(mensaje, tipo) {
             const div = document.getElementById('mensaje-inscripcion');
@@ -194,11 +201,9 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
 
             try {
-                const response = await fetch(`/api/inscripciones`, {
+                const response = await fetch('/api/inscripciones', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ eventoId: eventoId })
                 });
 
@@ -242,21 +247,18 @@
             }
         }
 
-                // VERIFICACIÓN DE CUPOS EN TIEMPO REAL - PUNTO 5
+        // Verificación de cupos en tiempo real
         async function verificarCuposDisponibles() {
             try {
                 const response = await fetch(`/api/eventos/${eventoId}/cupos`);
                 const data = await response.json();
 
-                // Actualizar número mostrado
                 const cuposSpan = document.querySelector('.cupos-disponibles');
                 if (cuposSpan) {
                     cuposSpan.textContent = data.cuposDisponibles;
-                    // Actualizar color según disponibilidad
                     cuposSpan.className = `fs-4 fw-bold cupos-disponibles ${data.cuposDisponibles > 0 ? 'text-success' : 'text-danger'}`;
                 }
 
-                // Actualizar barra de progreso
                 const progressBar = document.querySelector('.progress-bar');
                 if (progressBar) {
                     const porcentaje = (data.inscritos * 100.0 / data.cupoMaximo);
@@ -264,7 +266,6 @@
                     progressBar.className = `progress-bar ${data.cuposDisponibles > 0 ? 'bg-success' : 'bg-danger'}`;
                 }
 
-                // Deshabilitar botón si no hay cupos
                 const btnInscribirse = document.querySelector('[onclick="inscribirse()"]');
                 if (btnInscribirse && data.cuposDisponibles <= 0) {
                     btnInscribirse.disabled = true;
@@ -278,12 +279,12 @@
             }
         }
 
-        // Verificar cupos al cargar y cada 30 segundos (solo si hay usuario logueado)
         if (usuarioLogueado) {
             verificarCuposDisponibles();
-            setInterval(verificarCuposDisponibles, 30000); // 30 segundos
+            setInterval(verificarCuposDisponibles, 30000);
         }
-         /*]]>*/
+
+        /*]]>*/
     </script>
 </main>
 </body>
