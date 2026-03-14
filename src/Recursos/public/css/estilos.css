@@ -1,136 +1,427 @@
-/* Estilos personalizados */
+/* =====================================================
+   EVENTOS PUCMM — Hoja de Estilos Principal
+   Paleta: Azul PUCMM #003087 · Rojo #C8102E · Oro #F2A900
+   ===================================================== */
+
+/* ── Variables ── */
 :root {
-    --primary-color: #0d6efd;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
+    --pucmm-azul:       #003087;
+    --pucmm-azul-mid:   #004bb5;
+    --pucmm-azul-light: #1a5cbf;
+    --pucmm-rojo:       #C8102E;
+    --pucmm-rojo-dark:  #a00d25;
+    --pucmm-oro:        #F2A900;
+    --pucmm-gris:       #f4f6f9;
+    --pucmm-gris-mid:   #e8ecf2;
+    --pucmm-texto:      #1a2540;
+    --pucmm-texto-soft: #5a6a8a;
+    --shadow-sm:        0 2px 8px rgba(0,48,135,0.10);
+    --shadow-md:        0 4px 20px rgba(0,48,135,0.13);
+    --shadow-lg:        0 8px 40px rgba(0,48,135,0.16);
+    --radius:           10px;
+    --radius-lg:        16px;
 }
 
+/* ── Base ── */
+* { box-sizing: border-box; }
+
 body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--pucmm-gris);
+    color: var(--pucmm-texto);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-main {
-    flex: 1;
+main { flex: 1; }
+
+h1, h2, h3, h4, h5 {
+    font-family: 'Merriweather', Georgia, serif;
+    color: var(--pucmm-azul);
 }
 
-/* Cards */
-.card {
-    border: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
+/* ── Navbar PUCMM ── */
+.navbar-pucmm {
+    background: linear-gradient(135deg, var(--pucmm-azul) 0%, var(--pucmm-azul-mid) 100%);
+    padding: 0.6rem 0;
+    border-bottom: 3px solid var(--pucmm-rojo);
 }
 
-.card-header {
-    border-radius: 12px 12px 0 0 !important;
+.brand-escudo {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
 }
 
-/* Botones */
-.btn {
-    border-radius: 8px;
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.brand-title {
+    color: white;
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.brand-sub {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.nav-pucmm {
+    color: rgba(255,255,255,0.85) !important;
     font-weight: 500;
+    padding: 0.5rem 0.8rem !important;
+    border-radius: 6px;
     transition: all 0.2s;
 }
 
-.btn-lg {
-    padding: 0.75rem 1.5rem;
+.nav-pucmm:hover {
+    color: white !important;
+    background: rgba(255,255,255,0.12);
 }
 
-/* Tablas */
-.table th {
-    font-weight: 600;
-    text-transform: uppercase;
+/* Avatar usuario */
+.avatar-circle {
+    width: 32px;
+    height: 32px;
+    background: var(--pucmm-rojo);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
     font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+/* Badge de rol en navbar */
+.badge-rol {
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.9);
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    border-radius: 20px;
     letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
-/* Formularios */
-.form-control, .form-select {
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-    padding: 0.625rem 0.875rem;
+/* Barra roja decorativa */
+.barra-roja {
+    height: 4px;
+    background: linear-gradient(90deg, var(--pucmm-rojo) 0%, var(--pucmm-oro) 100%);
 }
 
-.form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+/* Dropdown personalizado */
+.dropdown-pucmm {
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius);
+    min-width: 220px;
+    overflow: hidden;
+    border-top: 3px solid var(--pucmm-azul);
 }
 
-/* Badges */
+.dropdown-header-pucmm {
+    padding: 12px 16px;
+    background: var(--pucmm-gris);
+}
+
+.dropdown-header-pucmm div {
+    font-weight: 700;
+    color: var(--pucmm-azul);
+    font-size: 0.9rem;
+}
+
+.dropdown-header-pucmm small {
+    color: var(--pucmm-texto-soft);
+    font-size: 0.78rem;
+}
+
+.dropdown-pucmm .dropdown-item {
+    padding: 9px 16px;
+    font-size: 0.9rem;
+    color: var(--pucmm-texto);
+    transition: all 0.15s;
+}
+
+.dropdown-pucmm .dropdown-item:hover {
+    background: var(--pucmm-gris);
+    color: var(--pucmm-azul);
+    padding-left: 20px;
+}
+
+/* ── Botones PUCMM ── */
+.btn {
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: all 0.2s;
+    letter-spacing: 0.2px;
+}
+
+.btn-primary,
+.bg-primary {
+    background-color: var(--pucmm-azul) !important;
+    border-color: var(--pucmm-azul) !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--pucmm-azul-mid) !important;
+    border-color: var(--pucmm-azul-mid) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,48,135,0.25);
+}
+
+.btn-pucmm-rojo {
+    background-color: var(--pucmm-rojo);
+    border-color: var(--pucmm-rojo);
+    color: white;
+}
+
+.btn-pucmm-rojo:hover {
+    background-color: var(--pucmm-rojo-dark);
+    border-color: var(--pucmm-rojo-dark);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--pucmm-azul) !important;
+    border-color: var(--pucmm-azul) !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--pucmm-azul) !important;
+    color: white !important;
+}
+
+.btn-lg { padding: 0.7rem 1.6rem; font-size: 0.95rem; }
+
+/* ── Cards ── */
+.card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    border-bottom: 1px solid var(--pucmm-gris-mid);
+}
+
+/* Cards de color primario usan azul PUCMM */
+.card.bg-primary {
+    background: linear-gradient(135deg, var(--pucmm-azul) 0%, var(--pucmm-azul-mid) 100%) !important;
+}
+
+/* ── Badges ── */
 .badge {
-    font-weight: 500;
-    padding: 0.5em 0.75em;
+    font-weight: 600;
+    padding: 0.4em 0.75em;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
 }
 
-/* Animaciones */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.bg-primary { background-color: var(--pucmm-azul) !important; }
+
+/* ── Tablas ── */
+.table th {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.8px;
+    color: var(--pucmm-texto-soft);
+    border-bottom: 2px solid var(--pucmm-gris-mid) !important;
 }
 
+.table-hover tbody tr:hover {
+    background-color: rgba(0,48,135,0.04);
+}
+
+/* ── Formularios ── */
+.form-control, .form-select {
+    border-radius: 7px;
+    border: 1.5px solid var(--pucmm-gris-mid);
+    padding: 0.6rem 0.875rem;
+    font-size: 0.9rem;
+    color: var(--pucmm-texto);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--pucmm-azul);
+    box-shadow: 0 0 0 3px rgba(0,48,135,0.12);
+    outline: none;
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--pucmm-texto);
+    margin-bottom: 5px;
+}
+
+/* ── Alerts ── */
 .alert {
+    border-radius: var(--radius);
+    border: none;
+    font-size: 0.9rem;
     animation: fadeIn 0.3s ease;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .card-body {
-        padding: 1.5rem !important;
-    }
+.alert-success { background: #e8f5e9; color: #1b5e20; }
+.alert-danger   { background: #fdecea; color: #b71c1c; }
+.alert-warning  { background: #fff8e1; color: #e65100; }
+.alert-info     { background: #e3f0fb; color: #0d47a1; }
 
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-    }
-}
-/* Estilos para inscripción */
-.progress-bar-success {
-    background-color: #28a745;
+/* ── Nav tabs ── */
+.nav-tabs {
+    border-bottom: 2px solid var(--pucmm-gris-mid);
 }
 
-.progress-bar-danger {
-    background-color: #dc3545;
+.nav-tabs .nav-link {
+    color: var(--pucmm-texto-soft);
+    font-weight: 600;
+    font-size: 0.88rem;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
 }
 
+.nav-tabs .nav-link:hover {
+    color: var(--pucmm-azul);
+    border-bottom-color: var(--pucmm-azul-light);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--pucmm-azul);
+    border-bottom-color: var(--pucmm-azul);
+    background: transparent;
+}
+
+/* ── Breadcrumb ── */
+.breadcrumb {
+    font-size: 0.82rem;
+    color: var(--pucmm-texto-soft);
+}
+
+.breadcrumb-item a {
+    color: var(--pucmm-azul);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.breadcrumb-item a:hover { text-decoration: underline; }
+.breadcrumb-item.active { color: var(--pucmm-texto-soft); }
+.breadcrumb-item + .breadcrumb-item::before { color: var(--pucmm-gris-mid); }
+
+/* ── Helpers de color ── */
+.text-primary    { color: var(--pucmm-azul) !important; }
+.text-pucmm      { color: var(--pucmm-azul) !important; }
+.text-pucmm-rojo { color: var(--pucmm-rojo) !important; }
+.bg-pucmm        { background-color: var(--pucmm-azul) !important; }
+.bg-pucmm-rojo   { background-color: var(--pucmm-rojo) !important; }
+
+/* ── Progress bar ── */
+.progress {
+    background-color: var(--pucmm-gris-mid);
+    border-radius: 20px;
+}
+
+.progress-bar {
+    border-radius: 20px;
+}
+
+/* ── QR Code container ── */
+#qrcode {
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    display: inline-block;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ── Hover cards (grid eventos) ── */
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: var(--radius-lg) !important;
+    overflow: hidden;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* ── Footer ── */
+.footer-pucmm {
+    background: linear-gradient(135deg, var(--pucmm-azul) 0%, #001f5c 100%);
+    border-top: 3px solid var(--pucmm-rojo);
+    margin-top: 3rem;
+}
+
+/* ── List group ── */
+.list-group-item {
+    border-color: var(--pucmm-gris-mid);
+    transition: background-color 0.15s;
+    font-size: 0.9rem;
+}
+
+.list-group-item:hover { background-color: var(--pucmm-gris); }
+
+/* ── Sticky top sidebar ── */
 .sticky-top {
     position: sticky;
     top: 20px;
     z-index: 100;
 }
 
-/* QR Code container */
-#qrcode {
-    padding: 15px;
-    background: white;
-    border-radius: 8px;
-    display: inline-block;
+/* ── Animaciones ── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Badges de estado */
-.badge-disponible {
-    background-color: #28a745;
+.card { animation: fadeIn 0.3s ease; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--pucmm-gris); }
+::-webkit-scrollbar-thumb {
+    background: var(--pucmm-azul-light);
+    border-radius: 10px;
 }
 
-.badge-agotado {
-    background-color: #dc3545;
-}
-
-/* Animaciones */
-.btn-inscribir {
-    transition: all 0.3s ease;
-}
-
-.btn-inscribir:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Lista de eventos */
-.list-group-item {
-    transition: background-color 0.2s;
-}
-
-.list-group-item:hover {
-    background-color: #f8f9fa;
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .card-body { padding: 1.25rem !important; }
+    .btn-group-sm .btn { padding: 0.25rem 0.5rem; }
+    .brand-sub { display: none; }
+    .footer-pucmm .col-md-6:last-child { text-align: center !important; }
 }

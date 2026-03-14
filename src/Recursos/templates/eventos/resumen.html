@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout('Resumen del Evento', ~{::main})}">
-    <title>Resumen</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Resumen del Evento', ~{::main})}">
+<head><title>Resumen</title></head>
 <body>
 <main>
 
@@ -109,7 +108,7 @@
         </div>
     </div>
 
-    <!-- Tabla de inscritos REAL -->
+    <!-- Tabla de inscritos -->
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <span class="fw-bold"><i class="bi bi-list-check me-2"></i>Lista de Inscritos</span>
@@ -142,7 +141,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <script>
-        // ID leído del atributo data — sin th:inline para evitar conflictos Thymeleaf
         const eventoId = document.getElementById('resumen-container').getAttribute('data-evento-id');
 
         let chartInscripciones = null;
@@ -173,7 +171,6 @@
             }
         }
 
-        // Carga la lista real de inscritos desde /api/eventos/{id}/inscritos
         async function cargarInscritos() {
             try {
                 const resp = await fetch('/api/eventos/' + eventoId + '/inscritos');
@@ -226,13 +223,11 @@
                         data: datos.map(function(d) { return d.cantidad; }),
                         backgroundColor: 'rgba(13, 110, 253, 0.7)',
                         borderColor: 'rgba(13, 110, 253, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4
+                        borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
                     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
@@ -244,24 +239,19 @@
             canvas.style.display = 'block';
             if (chartAsistencia) chartAsistencia.destroy();
             chartAsistencia = new Chart(canvas.getContext('2d'), {
-                type: 'line',
+                type: 'bar',
                 data: {
-                    labels: datos.map(function(d) { return d.hora; }),
+                    labels: datos.map(function(d) { return d.hora + ':00'; }),
                     datasets: [{
-                        label: 'Asistentes',
+                        label: 'Asistencias',
                         data: datos.map(function(d) { return d.cantidad; }),
-                        backgroundColor: 'rgba(25, 135, 84, 0.15)',
+                        backgroundColor: 'rgba(25, 135, 84, 0.7)',
                         borderColor: 'rgba(25, 135, 84, 1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 5,
-                        pointBackgroundColor: 'rgba(25, 135, 84, 1)'
+                        borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
                     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
@@ -299,15 +289,12 @@
 
         document.addEventListener('DOMContentLoaded', cargarTodo);
 
-        // FIX caché: cuando el usuario vuelve a esta página desde el escáner,
-        // el navegador puede mostrar la versión en caché. Esto fuerza recarga de datos.
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
                 cargarTodo();
             }
         });
 
-        // Actualizar cada 30 segundos
         setInterval(cargarTodo, 30000);
     </script>
 

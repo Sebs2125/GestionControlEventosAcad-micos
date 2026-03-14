@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout('Mis Inscripciones', ~{::main})}">
-    <title>Mis Inscripciones</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Mis Inscripciones', ~{::main})}">
+<head><title>Mis Inscripciones</title></head>
 <body>
 <main>
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -126,7 +125,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // Generar QR pequeño para cada inscripción activa
         document.querySelectorAll('[data-token]').forEach(function(div) {
             var token = div.getAttribute('data-token');
             if (token) {

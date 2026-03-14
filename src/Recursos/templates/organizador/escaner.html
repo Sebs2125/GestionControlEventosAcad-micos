@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout('Escáner QR', ~{::main})}">
-    <title>Escáner QR</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Escáner QR', ~{::main})}">
+<head><title>Escáner QR</title></head>
+<body>
 <main>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -97,7 +97,7 @@
                     return;
                 }
 
-                const camaraId = cameras[cameras.length - 1].id; // Preferir cámara trasera
+                const camaraId = cameras[cameras.length - 1].id;
 
                 html5QrCode.start(
                     camaraId,
@@ -130,7 +130,6 @@
         }
 
         async function onScanExitoso(decodedText) {
-            // Pausar brevemente para no procesar el mismo QR dos veces seguidas
             if ( escaneando ) {
                 html5QrCode.pause();
                 await procesarToken(decodedText);
@@ -146,8 +145,6 @@
         }
 
         async function procesarToken(rawToken) {
-            // El token puede venir como JSON (desde el QR generado en detalle.html)
-            // o como UUID directo (tokenQR almacenado en BD)
             let token = rawToken;
             try {
                 const parsed = JSON.parse(rawToken);
@@ -198,14 +195,12 @@
                 <span><i class="bi ${icono} me-2"></i><code>${token}</code></span>
                 <span class="text-muted small">${hora} — ${resultado}</span>`;
 
-            // Limpiar placeholder si existe
             const placeholder = lista.querySelector('.text-muted.text-center');
             if ( placeholder ) placeholder.remove();
 
             lista.prepend(item);
         }
 
-        // Permitir Enter en el input manual
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('input-token').addEventListener('keydown', e => {
                 if (e.key === 'Enter') validarToken();
@@ -215,5 +210,5 @@
     </script>
 
 </main>
-
+</body>
 </html>

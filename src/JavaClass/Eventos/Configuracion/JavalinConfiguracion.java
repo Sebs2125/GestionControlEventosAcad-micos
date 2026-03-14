@@ -24,7 +24,8 @@ public class JavalinConfiguracion
             configuracion.staticFiles.add("/public");
             configuracion.fileRenderer(new JavalinThymeleaf(templateEngine));
 
-            configuracion.http.maxRequestSize = 10 * 1024 * 1024L;
+            // FIX: aumentar límite de request a 50 MB para permitir imágenes grandes
+            configuracion.http.maxRequestSize = 50 * 1024 * 1024L;
 
             configuracion.jetty.sessionHandler(() -> {
                 SessionHandler handler = new SessionHandler();

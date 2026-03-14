@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout('Mi Perfil', ~{::main})}">
-    <title>Mi Perfil</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Mi Perfil', ~{::main})}">
+<head><title>Mi Perfil</title></head>
 <body>
 <main>
     <div class="row justify-content-center">
@@ -104,7 +103,7 @@
 
     <script>
         function validarPassword() {
-            var nueva    = document.getElementById('passwordNueva').value;
+            var nueva     = document.getElementById('passwordNueva').value;
             var confirmar = document.getElementById('passwordConfirmar');
             if (nueva !== confirmar.value) {
                 confirmar.classList.add('is-invalid');

@@ -7,7 +7,9 @@ import Servicio.InscripcionServicio;
 import Servicio.EventoServicio;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.HandlerType;
 import io.javalin.http.UploadedFile;
+import jakarta.servlet.MultipartConfigElement;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,13 +29,11 @@ public class EventoControlador
     private final InscripcionServicio inscripcionServicio;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
-    // Usar directorio del sistema del usuario — siempre existe y tiene permisos
     private static final String UPLOAD_DIR = System.getProperty("user.home") + File.separator + "evento_uploads";
 
     public EventoControlador(EventoServicio eventoServicio, InscripcionServicio inscripcionServicio) {
         this.eventoServicio      = eventoServicio;
         this.inscripcionServicio = inscripcionServicio;
-        // Crear carpeta si no existe
         File dir = new File(UPLOAD_DIR);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -49,6 +49,25 @@ public class EventoControlador
 
         app.get("/organizador/dashboard", this::dashboard);
         app.get("/organizador/eventos/nuevo", this::formularioNuevo);
+
+        // FIX: límites aumentados a 50 MB para imágenes de alta resolución
+        MultipartConfigElement multipartConfig = new MultipartConfigElement(
+                System.getProperty("java.io.tmpdir"),
+                50 * 1024 * 1024L,
+                50 * 1024 * 1024L,
+                10 * 1024 * 1024
+        );
+
+        app.before("/organizador/eventos", ctx -> {
+            if (ctx.method() == HandlerType.POST)
+                ctx.req().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfig);
+        });
+
+        app.before("/organizador/eventos/{id}/editar", ctx -> {
+            if (ctx.method() == HandlerType.POST)
+                ctx.req().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfig);
+        });
+
         app.post("/organizador/eventos", this::crear);
         app.get("/organizador/eventos/{id}/editar", this::formularioEditar);
         app.post("/organizador/eventos/{id}/editar", this::editar);
@@ -58,12 +77,10 @@ public class EventoControlador
         app.get("/organizador/eventos/{id}/resumen", this::verResumen);
         app.get("/organizador/eventos/{id}/escaner", this::verEscaner);
 
-        // Ruta para servir imágenes — lee del directorio del sistema
         app.get("/uploads/{filename}", this::servirImagen);
     }
 
     private void servirImagen(Context ctx) {
-        // Sanitizar para evitar path traversal
         String filename = Paths.get(ctx.pathParam("filename")).getFileName().toString();
         File file = new File(UPLOAD_DIR, filename);
 
@@ -73,7 +90,19 @@ public class EventoControlador
         }
         try {
             String contentType = Files.probeContentType(file.toPath());
-            if (contentType == null) contentType = "image/jpeg";
+            if (contentType == null || contentType.equals("application/octet-stream")) {
+                String lower = filename.toLowerCase();
+                if (lower.endsWith(".jfif") || lower.endsWith(".jpg") || lower.endsWith(".jpeg"))
+                    contentType = "image/jpeg";
+                else if (lower.endsWith(".png"))
+                    contentType = "image/png";
+                else if (lower.endsWith(".gif"))
+                    contentType = "image/gif";
+                else if (lower.endsWith(".webp"))
+                    contentType = "image/webp";
+                else
+                    contentType = "image/jpeg";
+            }
             ctx.contentType(contentType);
             ctx.result(new FileInputStream(file));
         } catch (Exception e) {
@@ -85,7 +114,6 @@ public class EventoControlador
         try {
             UploadedFile archivo = ctx.uploadedFile("imagen");
 
-            // Verificar que se subió algo
             if (archivo == null) {
                 System.out.println("No se recibió archivo imagen");
                 return null;
@@ -94,31 +122,31 @@ public class EventoControlador
             String originalName = archivo.filename();
             System.out.println("Archivo recibido: " + originalName + " | Content-Type: " + archivo.contentType());
 
-            // Verificar que tiene nombre (no está vacío)
             if (originalName == null || originalName.trim().isEmpty()) {
                 System.out.println("Nombre de archivo vacío");
                 return null;
             }
 
-            // Extensión
             String extension = "";
             int dot = originalName.lastIndexOf('.');
             if (dot >= 0) extension = originalName.substring(dot).toLowerCase();
 
-            // Validar tipo
-            if (!extension.matches("\\.(jpg|jpeg|png|gif|webp)")) {
+            // FIX: agregado .jfif como extensión válida
+            if (!extension.matches("\\.(jpg|jpeg|jfif|png|gif|webp)")) {
                 System.out.println("Extensión no permitida: " + extension);
                 return null;
             }
 
+            // Normalizar .jfif a .jpg para mejor compatibilidad
+            if (extension.equals(".jfif")) extension = ".jpg";
+
             String nuevoNombre = UUID.randomUUID().toString() + extension;
             File destino = new File(UPLOAD_DIR, nuevoNombre);
 
-            // Leer y escribir el archivo
             try (InputStream in = archivo.content();
                  FileOutputStream out = new FileOutputStream(destino)) {
 
-                byte[] buf = new byte[4096];
+                byte[] buf = new byte[8192];
                 int bytesLeidos;
                 long totalBytes = 0;
                 while ((bytesLeidos = in.read(buf)) != -1) {
@@ -221,7 +249,6 @@ public class EventoControlador
         Map<String, Object> modelo = baseModelo(ctx);
         modelo.put("evento", evento);
         modelo.put("editar", true);
-        // Formato compatible con datetime-local input
         modelo.put("fechaFormateada", evento.getFechaHora().format(formatter));
         ctx.render("/eventos/formulario.html", modelo);
     }

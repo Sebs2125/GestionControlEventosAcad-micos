@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout :: layout(${evento.titulo}, ~{::main})}">
-    <title>Detalle Evento</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(${evento.titulo}, ~{::main})}">
+<head><title>Detalle Evento</title></head>
 <body>
 <main>
     <nav aria-label="breadcrumb" class="mb-3">
@@ -111,7 +110,6 @@
                                     Token: <code th:text="${inscripcion.tokenQR}">token</code>
                                 </small>
 
-                                <!-- Botones descargar y copiar token -->
                                 <div class="d-flex gap-2 justify-content-center mt-2">
                                     <button onclick="descargarQR()" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-download me-1"></i>Descargar QR
@@ -171,7 +169,6 @@
         var tokenQR    = document.querySelector('code') ? document.querySelector('code').textContent.trim() : null;
         var usuarioLogueado = (document.querySelector('.cupos-disponibles') !== null);
 
-        // Generar QR si hay inscripción activa
         if (tokenQR && document.getElementById('qrcode')) {
             new QRCode(document.getElementById('qrcode'), {
                 text: tokenQR,
@@ -269,7 +266,6 @@
                 });
         }
 
-        // Verificar cupos en tiempo real
         function verificarCupos() {
             var el = document.querySelector('[data-evento-id]');
             if (!el) return;
