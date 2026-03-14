@@ -193,9 +193,13 @@ public class EventoServicio
     public Evento buscarPorId(Long id )
     {
         Session session = BaseDeDatosConfiguracion.getSessionFactory().openSession();
-
         try {
-            return session.get(Evento.class, id);
+            Evento evento = session.get(Evento.class, id);
+            if (evento != null) {
+                // FIX: inicializar colección LAZY antes de cerrar sesión
+                org.hibernate.Hibernate.initialize(evento.getInscripciones());
+            }
+            return evento;
         } finally {
             session.close();
         }
@@ -273,5 +277,7 @@ public class EventoServicio
             throw new IllegalArgumentException("Cupo mínimo 1");
         }
     }
+
+
 
 }
