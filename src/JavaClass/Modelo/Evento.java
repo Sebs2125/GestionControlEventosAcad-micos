@@ -63,7 +63,6 @@ public class Evento
         this.organizador = organizador;
     }
 
-    // ── Getters ──────────────────────────────────────────────
     public Long getId()                          { return id; }
     public String getTitulo()                    { return titulo; }
     public String getDescripcion()               { return descripcion; }
@@ -76,7 +75,6 @@ public class Evento
     public Set<InscripcionUsuario> getInscripciones() { return inscripciones; }
     public LocalDateTime getFechaCreacion()      { return fechaCreacion; }
 
-    // ── Setters ──────────────────────────────────────────────
     public void setId(Long id)                          { this.id = id; }
     public void setTitulo(String titulo)                { this.titulo = titulo; }
     public void setDescripcion(String descripcion)      { this.descripcion = descripcion; }

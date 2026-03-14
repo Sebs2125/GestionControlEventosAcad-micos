@@ -22,9 +22,9 @@
 
                     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-                    <!-- ═══════════════════════════════════════
+                    <!--
                          FORMULARIO EDITAR
-                    ════════════════════════════════════════ -->
+                  -->
                     <form th:if="${editar}"
                           th:action="@{|/organizador/eventos/${evento.id}/editar|}"
                           method="post"
@@ -90,9 +90,9 @@
                         </div>
                     </form>
 
-                    <!-- ═══════════════════════════════════════
+                    <!--
                          FORMULARIO CREAR
-                    ════════════════════════════════════════ -->
+                   -->
                     <form th:unless="${editar}"
                           action="/organizador/eventos"
                           method="post"

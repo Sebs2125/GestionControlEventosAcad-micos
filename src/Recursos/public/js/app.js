@@ -1,5 +1,4 @@
 /**
- * app.js — Scripts globales del Sistema de Eventos Académicos - PUCMM
  * Punto 10: Validaciones con JavaScript
  */
 

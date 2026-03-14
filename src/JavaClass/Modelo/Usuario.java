@@ -69,7 +69,6 @@ public class Usuario implements java.io.Serializable
     public void setRol(Rol rol)              { this.rol = rol; }
     public void setActivo(boolean activo)    { this.activo = activo; }
 
-    // ── Métodos de negocio ────────────────────────────────────
     public boolean esAdmin() {
         return this.rol == Rol.ADMINISTRADOR;
     }

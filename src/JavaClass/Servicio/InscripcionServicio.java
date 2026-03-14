@@ -144,7 +144,7 @@ public class InscripcionServicio {
         }
     }
 
-    // FIX 2 (Alta): marcarAsistencia ahora busca la inscripción dentro de la misma
+    //   marcarAsistencia ahora busca la inscripción dentro de la misma
     // sesión/transacción activa, evitando NonUniqueObjectException que ocurría cuando
     // buscarPorTokenQR abría una segunda sesión y devolvía una entidad adjunta a ella;
     // al hacer session.update() con la entidad de otra sesión Hibernate lanzaba la excepción.

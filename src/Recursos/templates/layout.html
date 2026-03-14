@@ -5,19 +5,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${titulo} + ' - Eventos Académicos'">Eventos Académicos</title>
+    <title th:text="${titulo} + ' - Eventos PUCMM'">Eventos PUCMM</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/estilos.css">
 </head>
 
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+
+<nav class="navbar navbar-expand-lg navbar-pucmm shadow-sm">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="/">
-            <i class="bi bi-calendar-event me-2"></i>Eventos Académicos
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+
+
+            <div class="brand-text">
+                <span class="brand-title">Eventos PUCMM</span>
+            </div>
         </a>
+
         <button class="navbar-toggler" type="button"
                 data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -26,56 +33,73 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/eventos"><i class="bi bi-list me-1"></i>Lista</a>
+                    <a class="nav-link nav-pucmm" href="/eventos">
+                        <i class="bi bi-list-ul me-1"></i>Lista
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/eventos/grid"><i class="bi bi-grid me-1"></i>Tarjetas</a>
+                    <a class="nav-link nav-pucmm" href="/eventos/grid">
+                        <i class="bi bi-grid-3x3-gap me-1"></i>Tarjetas
+                    </a>
                 </li>
             </ul>
 
-            <ul class="navbar-nav">
+            <ul class="navbar-nav align-items-center gap-1">
                 <!-- No logueado -->
                 <li th:if="${session.usuario == null}" class="nav-item">
-                    <a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
+                    <a class="btn btn-outline-light btn-sm px-3" href="/login">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
+                    </a>
                 </li>
                 <li th:if="${session.usuario == null}" class="nav-item">
-                    <a class="nav-link" href="/registro"><i class="bi bi-person-plus me-1"></i>Registro</a>
+                    <a class="btn btn-pucmm-rojo btn-sm px-3" href="/registro">
+                        <i class="bi bi-person-plus me-1"></i>Registro
+                    </a>
                 </li>
 
                 <!-- Logueado -->
                 <li th:if="${session.usuario != null}" class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle me-1"></i>
-                        <span th:text="${session.usuario.nombre}">Usuario</span>
-                        <span class="badge bg-secondary ms-1" th:text="${session.rol}">ROL</span>
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#"
+                       role="button" data-bs-toggle="dropdown">
+                        <div class="avatar-circle">
+                            <span th:text="${#strings.substring(session.usuario.nombre, 0, 1)}">U</span>
+                        </div>
+                        <span th:text="${session.usuario.nombre}" class="d-none d-md-inline">Usuario</span>
+                        <span class="badge-rol" th:text="${session.rol}">ROL</span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-pucmm">
+
+                        <li class="dropdown-header-pucmm">
+                            <div th:text="${session.usuario.nombre}">Nombre</div>
+                            <small th:text="${session.usuario.email}">email</small>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
 
                         <!-- Participante -->
                         <li th:if="${session.rol == 'PARTICIPANTE'}">
                             <a class="dropdown-item" href="/participante/mis-inscripciones">
-                                <i class="bi bi-ticket-perforated me-2"></i>Mis Inscripciones
+                                <i class="bi bi-ticket-perforated me-2 text-pucmm"></i>Mis Inscripciones
                             </a>
                         </li>
                         <li th:if="${session.rol == 'PARTICIPANTE'}">
                             <a class="dropdown-item" href="/participante/perfil">
-                                <i class="bi bi-person-gear me-2"></i>Mi Perfil
+                                <i class="bi bi-person-gear me-2 text-pucmm"></i>Mi Perfil
                             </a>
                         </li>
 
                         <!-- Organizador / Admin -->
                         <li th:if="${session.rol == 'ORGANIZADOR' or session.rol == 'ADMINISTRADOR'}">
                             <a class="dropdown-item" href="/organizador/dashboard">
-                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                                <i class="bi bi-speedometer2 me-2 text-pucmm"></i>Dashboard
                             </a>
                         </li>
                         <li th:if="${session.rol == 'ADMINISTRADOR'}">
                             <a class="dropdown-item" href="/admin/dashboard">
-                                <i class="bi bi-shield-lock me-2"></i>Administrar
+                                <i class="bi bi-shield-lock me-2 text-danger"></i>Administrar
                             </a>
                         </li>
 
-                        <li><hr class="dropdown-divider"></li>
+                        <li><hr class="dropdown-divider my-1"></li>
                         <li>
                             <a class="dropdown-item text-danger" href="/logout">
                                 <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
@@ -88,9 +112,26 @@
     </div>
 </nav>
 
+
+
+
 <div class="container py-4" th:insert="${contenido}"></div>
 
-<
+
+<footer class="footer-pucmm mt-auto">
+    <div class="container">
+        <div class="row align-items-center py-3">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-2">
+
+                    <span class="fw-bold text-white">Eventos PUCMM</span>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+            </div>
+        </div>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/app.js"></script>

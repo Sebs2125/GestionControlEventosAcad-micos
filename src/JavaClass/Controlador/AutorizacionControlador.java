@@ -27,10 +27,7 @@ public class AutorizacionControlador
 
         app.before( ctx -> {
             String path = ctx.path();
-            // FIX 4 (Media): excluir /api/* del before que redirige a /login.
-            // Antes, las rutas /api/* eran interceptadas aquí y recibían una
-            // redirección HTML 302 en vez del JSON 401 que devuelve ApiControlador,
-            // rompiendo a clientes REST. ApiControlador ya maneja su propia auth.
+
             if (esRutaProtegida(path) && ctx.sessionAttribute("usuario") == null)
             {
                 ctx.redirect("/login");

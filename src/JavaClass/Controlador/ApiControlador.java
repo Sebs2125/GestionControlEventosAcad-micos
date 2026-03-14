@@ -31,14 +31,9 @@ public class ApiControlador
 
     public void registrarRutas(Javalin app)
     {
-        // Endpoint público para cupos (no requiere auth)
         app.get("/api/eventos/{id}/cupos", this::obtenerCupos);
 
-        // FIX 1 (Alta): lanzar UnauthorizedResponse (HttpResponseException) para detener
-        // realmente la cadena en Javalin 5. ctx.skipRemainingHandlers() no existe en Javalin 5
-        // y ctx.endpointHandlerPath() tampoco detenía el flujo.
-        // Lanzar una HttpResponseException es el mecanismo correcto: Javalin la captura,
-        // devuelve el status indicado y no continúa con los handlers posteriores.
+
         app.before("/api/*", ctx -> {
             String path = ctx.path();
             // Excluir rutas públicas
